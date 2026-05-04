@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { Role } from 'shared/permission/types'
-import type { Relation } from 'shared/permission/scope/types'
+import { isTenantAssignmentRole, type Relation } from 'shared/permission/scope/types'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
 
@@ -19,7 +19,7 @@ export class UserRelationRepository {
     if (!user) throw new HTTPException(403, { message: 'User not found' })
 
     const role = user.role as Role
-    if (role === 'tenant_owner' || role === 'tenant_staff' || role === 'developer') {
+    if (isTenantAssignmentRole(role)) {
       return { relation: role as Relation, resourceId: user.tenantId }
     }
 

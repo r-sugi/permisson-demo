@@ -1,9 +1,6 @@
 import type { RelationResolver } from './resolver-types'
-import type { Role, TenantId, ShopId } from '../types'
-
-function isTenantWideRole(role: Role): boolean {
-  return role === 'tenant_owner' || role === 'tenant_staff' || role === 'developer'
-}
+import type { TenantId, ShopId } from '../types'
+import { isTenantAssignmentRole } from './types'
 
 export const resolveTenantAssignment =
   (tenantId: TenantId): RelationResolver =>
@@ -33,7 +30,7 @@ export const resolveCustomerViaShop =
     const shop = await repo.shop.findById(history.shopId)
     if (!shop) return false
 
-    if (isTenantWideRole(auth.role)) {
+    if (isTenantAssignmentRole(auth.role)) {
       return shop.tenantId === auth.tenantId
     }
 

@@ -8,6 +8,7 @@ import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
 import { schema } from '../rdb/index'
 import type { Role } from 'shared/permission/types'
+import { isTenantAssignmentRole } from 'shared/permission/scope/types'
 import { buildPermissionsMap } from 'shared/permission/permissions'
 // ─────────────────────────────────────────────
 // パスワードハッシュ（Web Crypto API）
@@ -354,7 +355,7 @@ export const protectedAuthRoutes = new Hono<HonoEnv>()
 
     if (!user) throw new HTTPException(404, { message: 'User not found' })
 
-    const isTenantLevel = ['tenant_owner', 'tenant_staff', 'developer'].includes(auth.role)
+    const isTenantLevel = isTenantAssignmentRole(auth.role)
     let shopScope: string
     if (isTenantLevel) {
       shopScope = '全て'
