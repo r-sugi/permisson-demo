@@ -1,5 +1,5 @@
 import type { RelationResolver } from './resolver-types'
-import type { TenantId, ShopId } from '../types'
+import type { TenantId, ShopId, CustomerId } from '../types'
 import {
   resolveTenantAssignment,
   resolveShopAssignment,
@@ -11,7 +11,7 @@ type ResolverArgMap = {
   tenant: { tenantId: TenantId }
   shop: { shopId: ShopId }
   shopViaTenant: { shopId: ShopId }
-  customerViaShop: { customerId: string }
+  customerViaShop: { customerId: CustomerId }
 }
 
 const RESOLVER_MAP: {

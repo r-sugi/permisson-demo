@@ -31,9 +31,11 @@ export type PolicyContext = {
 // ================================
 export type TenantId = string & { readonly _brand: 'TenantId' }
 export type ShopId = string & { readonly _brand: 'ShopId' }
+export type CustomerId = string & { readonly _brand: 'CustomerId' }
 
 export const TenantId = (id: string): TenantId => id as TenantId
 export const ShopId = (id: string): ShopId => id as ShopId
+export const CustomerId = (id: string): CustomerId => id as CustomerId
 
 // ================================
 // 数量制限：無制限を表す定数（店舗作成上限など）
