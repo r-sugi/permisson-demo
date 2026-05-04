@@ -57,7 +57,7 @@ type AuthorizeOptions = {
     action: string
   }
   relation?: {
-    resolver: RelationResolver  // (repos, auth) => Promise<boolean>
+    resolver: RelationResolver  // (repo, auth) => Promise<boolean>
   }
 }
 ```
@@ -81,9 +81,9 @@ export function authorize(options: AuthorizeOptions) {
       }
     }
 
-    // Gate 2: ReBAC（repos をそのまま渡すだけ。中身を知らない）
+    // Gate 2: ReBAC（repo をそのまま渡すだけ。中身を知らない）
     if (options.relation) {
-      const allowed = await options.relation.resolver(c.get('repos'), auth)
+      const allowed = await options.relation.resolver(c.get('repo'), auth)
       if (!allowed) {
         throw new HTTPException(404, { message: 'Not Found' })  // 存在を秘匿
       }
@@ -115,7 +115,7 @@ export type Repositories = {
   purchaseHistory: PurchaseHistoryRepository
 }
 
-export type RelationResolver = (repos: Repositories, auth: AuthContext) => Promise<boolean>
+export type RelationResolver = (repo: Repositories, auth: AuthContext) => Promise<boolean>
 ```
 
 ### 2-5. Resolver 関数（shared/permission/scope/resolvers.ts）
@@ -129,30 +129,30 @@ import type { TenantId, ShopId } from '../types'
 // 1 段
 export const resolveTenantAssignment =
   (tenantId: TenantId): RelationResolver =>
-  async (_repos, auth) => auth.tenantId === tenantId
+  async (_repo, auth) => auth.tenantId === tenantId
 
 export const resolveShopAssignment =
   (shopId: ShopId): RelationResolver =>
-  async (repos, auth) => {
-    const row = await repos.shopAssignment.findByUserIdAndShopId(auth.userId, shopId)
+  async (repo, auth) => {
+    const row = await repo.shopAssignment.findByUserIdAndShopId(auth.userId, shopId)
     return row !== null
   }
 
 // 2 段
 export const resolveShopViaTenant =
   (shopId: ShopId): RelationResolver =>
-  async (repos, auth) => {
-    const shop = await repos.shop.findById(shopId)
+  async (repo, auth) => {
+    const shop = await repo.shop.findById(shopId)
     if (!shop || shop.deletedAt) return false
     return shop.tenantId === auth.tenantId
   }
 
 export const resolveCustomerViaShop =
   (customerId: string): RelationResolver =>
-  async (repos, auth) => {
-    const history = await repos.purchaseHistory.findByCustomerId(customerId)
+  async (repo, auth) => {
+    const history = await repo.purchaseHistory.findByCustomerId(customerId)
     if (!history) return false
-    const assignment = await repos.shopAssignment
+    const assignment = await repo.shopAssignment
       .findByUserIdAndShopId(auth.userId, history.shopId)
     return assignment !== null
   }
@@ -220,7 +220,7 @@ import { PurchaseHistoryRepository } from '../repository/purchase-history.reposi
 
 export async function diMiddleware(c, next) {
   const db = c.get('db')
-  c.set('repos', {
+  c.set('repo', {
     shopAssignment:  new ShopAssignmentRepository(db),
     shop:            new ShopRepository(db),
     purchaseHistory: new PurchaseHistoryRepository(db),

@@ -11,7 +11,7 @@ export const customerRoutes = new Hono<HonoEnv>()
     '/',
     authorize({ policy: { target: 'customer', action: 'read' } }),
     async (c) => {
-      const customers = await c.get('usecases').customers.listCustomers()
+      const customers = await c.get('useCase').customer.listCustomers()
       return c.json(customers)
     },
   )
@@ -32,7 +32,7 @@ export const customerRoutes = new Hono<HonoEnv>()
     ),
     async (c) => {
       const body = c.req.valid('json')
-      const customer = await c.get('usecases').customers.createCustomer(body)
+      const customer = await c.get('useCase').customer.createCustomer(body)
       return c.json(customer, 201)
     },
   )
@@ -52,7 +52,7 @@ export const customerRoutes = new Hono<HonoEnv>()
     async (c) => {
       const customerId = c.req.param('id')
       const updates = c.req.valid('json')
-      const customer = await c.get('usecases').customers.updateCustomer(customerId, updates)
+      const customer = await c.get('useCase').customer.updateCustomer(customerId, updates)
       return c.json(customer)
     },
   )
@@ -63,7 +63,7 @@ export const customerRoutes = new Hono<HonoEnv>()
     authorize({ policy: { target: 'customer', action: 'delete' } }),
     async (c) => {
       const customerId = c.req.param('id')
-      const result = await c.get('usecases').customers.deleteCustomer(customerId)
+      const result = await c.get('useCase').customer.deleteCustomer(customerId)
       return c.json(result)
     },
   )
@@ -73,7 +73,7 @@ export const customerRoutes = new Hono<HonoEnv>()
     '/export',
     authorize({ policy: { target: 'customer', action: 'exportCsv' } }),
     async (c) => {
-      const customers = await c.get('usecases').customers.exportCsv()
+      const customers = await c.get('useCase').customer.exportCsv()
       return c.json({ customers, exportedAt: new Date().toISOString(), count: customers.length })
     },
   )

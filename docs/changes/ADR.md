@@ -511,9 +511,9 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
   const auth = c.get('auth')
   const db = c.get('db')
   const customerRepo = CustomerRepository.create(auth.userId, db)
-  c.set('usecases', {
-    customers: new CustomerUseCase(customerRepo, auth),
-    shops:     new ShopUseCase(db, auth),
+  c.set('useCase', {
+    customer: new CustomerUseCase(customerRepo, auth),
+    shop:     new ShopUseCase(db, auth),
   })
   await next()
 }
@@ -521,22 +521,22 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
 
 ```typescript
 // worker/type.ts
-type Usecases = {
-  customers: CustomerUseCase
-  shops:     ShopUseCase
+type UseCases = {
+  customer: CustomerUseCase
+  shop:     ShopUseCase
 }
 
 type Variables = {
   auth:     AuthContext
   db:       DrizzleDb
-  usecases: Usecases
+  useCase: UseCases
 }
 ```
 
-**routes の責務ルール**：route ハンドラは `c.get('usecases')` 経由で UseCase を呼ぶだけ。`db` を直接操作してはならない。
+**routes の責務ルール**：route ハンドラは `c.get('useCase')` 経由で UseCase を呼ぶだけ。`db` を直接操作してはならない。
 
 ```
-✅ route → c.get('usecases').xxx → useCase → repository → db
+✅ route → c.get('useCase').xxx → useCase → repository → db
 ❌ route → db（直接）
 ```
 
@@ -545,7 +545,7 @@ type Variables = {
 app.get('/customers',
   authorize({ policy: { target: 'customer', action: 'read' } }),
   async (c) => {
-    const customers = await c.get('usecases').customers.listCustomers()
+    const customers = await c.get('useCase').customer.listCustomers()
     return c.json(customers)
   }
 )
@@ -554,7 +554,7 @@ app.get('/customers',
 app.get('/customers/export',
   authorize({ policy: { target: 'customer', action: 'exportCsv' } }),
   async (c) => {
-    const customers = await c.get('usecases').customers.exportCsv()
+    const customers = await c.get('useCase').customer.exportCsv()
     return c.json({ customers, exportedAt: new Date().toISOString(), count: customers.length })
   }
 )
@@ -1031,7 +1031,7 @@ worker/                       # Cloudflare Workers × Hono
 │   ├── authorize.ts          # authorize MW 本体（Gate 1: PBAC / Gate 2: ReBAC）
 │   │                         # AuthorizeOptions, PolicyOption, ReBACOption
 │   │                         # resolveUserRelation()（DB アクセスが必要なため Worker 層に配置）
-│   └── di.ts                 # DIミドルウェア（CustomerRepository / UseCase を c.set('usecases', ...) で注入）
+│   └── di.ts                 # DIミドルウェア（CustomerRepository / UseCase を c.set('useCase', ...) で注入）
 │
 ├── repository/
 │   ├── customer.repository.ts      # TenantCustomerScope, ShopCustomerScope, scopeMap
@@ -1042,12 +1042,12 @@ worker/                       # Cloudflare Workers × Hono
 │   ├── customer.usecase.ts   # CustomerUseCase（listCustomers, updateCustomer, deleteCustomer, exportCsv）
 │   └── shop.usecase.ts       # ShopUseCase（listShops, createShop, deleteShop）
 │
-├── type.ts                   # HonoEnv, Variables（auth / db / usecases）, Usecases 型
+├── type.ts                   # HonoEnv, Variables（auth / db / useCase）, UseCases 型
 │
 └── routes/
     ├── auth.ts               # ログイン・/me ルート
-    ├── customers.ts          # Hono ルート定義（c.get('usecases').customers 経由）
-    └── shops.ts              # Hono ルート定義（c.get('usecases').shops 経由）
+    ├── customers.ts          # Hono ルート定義（c.get('useCase').customer 経由）
+    └── shops.ts              # Hono ルート定義（c.get('useCase').shop 経由）
 
 src/                          # フロントエンド（React）
 ├── providers/

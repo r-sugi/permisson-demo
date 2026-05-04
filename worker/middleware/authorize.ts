@@ -39,7 +39,7 @@ export function authorize(options: AuthorizeOptions) {
     // Gate 2: ReBAC（repository 経由。authorize 本体は resolver の中身を知らない）
     if (options.relation) {
       const relationResolver = options.relation.resolver(c)
-      const allowed = await relationResolver(c.get('repos'), auth)
+      const allowed = await relationResolver(c.get('repo'), auth)
       if (!allowed) {
         throw new HTTPException(404, { message: 'Not Found' })
       }

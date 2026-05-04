@@ -8,7 +8,7 @@ import { authorize } from '../middleware/authorize'
 
 // GET /api/shops - 店舗一覧
 export const shopListRoutes = new Hono<HonoEnv>().get('/', async (c) => {
-  const shops = await c.get('usecases').shops.listShops()
+  const shops = await c.get('useCase').shop.listShops()
   return c.json(shops)
 })
 
@@ -27,7 +27,7 @@ export const tenantShopRoutes = new Hono<HonoEnv>()
     async (c) => {
       const tenantId = c.req.param('tenantId')
       const { name } = c.req.valid('json')
-      const shop = await c.get('usecases').shops.createShop(tenantId, name)
+      const shop = await c.get('useCase').shop.createShop(tenantId, name)
       return c.json(shop, 201)
     },
   )
@@ -42,7 +42,7 @@ export const tenantShopRoutes = new Hono<HonoEnv>()
     }),
     async (c) => {
       const shopId = c.req.param('shopId')
-      const result = await c.get('usecases').shops.deleteShop(shopId)
+      const result = await c.get('useCase').shop.deleteShop(shopId)
       return c.json(result)
     },
   )

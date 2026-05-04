@@ -21,4 +21,4 @@ export type Repositories = {
   purchaseHistory: PurchaseHistoryRepository
 }
 
-export type RelationResolver = (repos: Repositories, auth: AuthContext) => Promise<boolean>
+export type RelationResolver = (repo: Repositories, auth: AuthContext) => Promise<boolean>

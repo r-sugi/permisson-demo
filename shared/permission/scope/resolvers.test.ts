@@ -48,13 +48,13 @@ describe('resolveTenantAssignment', () => {
 describe('resolveShopAssignment', () => {
   it('assignment があれば true', async () => {
     const r = resolveShopAssignment(ShopId('shop-1'))
-    const repos = mockRepos({
+    const repo = mockRepos({
       shopAssignment: {
         findByUserIdAndShopId: async (uid, sid) =>
           uid === 'user-1' && sid === 'shop-1' ? { userId: uid, shopId: sid } : null,
       },
     })
-    expect(await r(repos, auth())).toBe(true)
+    expect(await r(repo, auth())).toBe(true)
   })
 
   it('assignment が null なら false', async () => {
@@ -66,47 +66,47 @@ describe('resolveShopAssignment', () => {
 describe('resolveShopViaTenant', () => {
   it('店舗があり未削除でテナント一致なら true', async () => {
     const r = resolveShopViaTenant(ShopId('shop-1'))
-    const repos = mockRepos({
+    const repo = mockRepos({
       shop: {
         findById: async () => ({ tenantId: 'tenant-a', deletedAt: null }),
       },
     })
-    expect(await r(repos, auth({ tenantId: 'tenant-a' }))).toBe(true)
+    expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(true)
   })
 
   it('店舗がなければ false', async () => {
     const r = resolveShopViaTenant(ShopId('shop-x'))
-    const repos = mockRepos({
+    const repo = mockRepos({
       shop: { findById: async () => null },
     })
-    expect(await r(repos, auth())).toBe(false)
+    expect(await r(repo, auth())).toBe(false)
   })
 
   it('deletedAt がありなら false', async () => {
     const r = resolveShopViaTenant(ShopId('shop-1'))
-    const repos = mockRepos({
+    const repo = mockRepos({
       shop: {
         findById: async () => ({ tenantId: 'tenant-a', deletedAt: '2025-01-01' }),
       },
     })
-    expect(await r(repos, auth({ tenantId: 'tenant-a' }))).toBe(false)
+    expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(false)
   })
 
   it('テナントが不一致なら false', async () => {
     const r = resolveShopViaTenant(ShopId('shop-1'))
-    const repos = mockRepos({
+    const repo = mockRepos({
       shop: {
         findById: async () => ({ tenantId: 'tenant-b', deletedAt: null }),
       },
     })
-    expect(await r(repos, auth({ tenantId: 'tenant-a' }))).toBe(false)
+    expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(false)
   })
 })
 
 describe('resolveCustomerViaShop', () => {
   it('purchaseHistory と assignment が繋がれば true', async () => {
     const r = resolveCustomerViaShop('cust-1')
-    const repos = mockRepos({
+    const repo = mockRepos({
       purchaseHistory: {
         findByCustomerId: async () => ({ shopId: 'shop-1' }),
       },
@@ -115,7 +115,7 @@ describe('resolveCustomerViaShop', () => {
           uid === 'user-1' && sid === 'shop-1' ? { userId: uid, shopId: sid } : null,
       },
     })
-    expect(await r(repos, auth())).toBe(true)
+    expect(await r(repo, auth())).toBe(true)
   })
 
   it('purchaseHistory がなければ false', async () => {
@@ -125,12 +125,12 @@ describe('resolveCustomerViaShop', () => {
 
   it('assignment がなければ false', async () => {
     const r = resolveCustomerViaShop('cust-1')
-    const repos = mockRepos({
+    const repo = mockRepos({
       purchaseHistory: {
         findByCustomerId: async () => ({ shopId: 'shop-1' }),
       },
     })
-    expect(await r(repos, auth())).toBe(false)
+    expect(await r(repo, auth())).toBe(false)
   })
 })
 

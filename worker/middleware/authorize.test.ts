@@ -26,10 +26,10 @@ function testApp(
   const app = new Hono<HonoEnv>()
   app.use('*', async (c, next) => {
     c.set('auth', auth)
-    c.set('repos', mockRepos)
-    // authorize は db / usecases を参照しない
+    c.set('repo', mockRepos)
+    // authorize は db / useCase を参照しない
     c.set('db', {} as HonoEnv['Variables']['db'])
-    c.set('usecases', {} as HonoEnv['Variables']['usecases'])
+    c.set('useCase', {} as HonoEnv['Variables']['useCase'])
     await next()
   })
   routes(app)

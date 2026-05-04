@@ -4,16 +4,16 @@ import type { DrizzleDb } from './services/database.service'
 import type { CustomerUseCase } from './usecase/customer.usecase'
 import type { ShopUseCase } from './usecase/shop.usecase'
 
-export type Usecases = {
-  customers: CustomerUseCase
-  shops: ShopUseCase
+export type UseCases = {
+  customer: CustomerUseCase
+  shop: ShopUseCase
 }
 
 export type Variables = {
   auth: AuthContext
   db: DrizzleDb
-  repos: Repositories
-  usecases: Usecases
+  repo: Repositories
+  useCase: UseCases
 }
 
 export type HonoEnv = {
