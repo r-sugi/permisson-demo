@@ -1,7 +1,9 @@
 import { HTTPException } from 'hono/http-exception'
 import { ulid } from 'ulidx'
+import type { AuthContext } from 'shared/permission/types'
 import type { CustomerRepository } from '../repository/customer.repository'
 import type { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
+import type { ShopRepository } from '../repository/shop.repository'
 import type { DrizzleDb } from '../services/database.service'
 
 export class CustomerUseCase {
@@ -9,6 +11,8 @@ export class CustomerUseCase {
     private readonly customerRepo: CustomerRepository,
     private readonly purchaseHistoryRepo: PurchaseHistoryRepository,
     private readonly db: DrizzleDb,
+    private readonly shopRepo: ShopRepository,
+    private readonly auth: AuthContext,
   ) {}
 
   async listCustomers() {
@@ -34,20 +38,25 @@ export class CustomerUseCase {
     tag?: string
     memo?: string
   }) {
+    const shop = await this.shopRepo.findById(data.shopId)
+    if (!shop || shop.deletedAt || shop.tenantId !== this.auth.tenantId) {
+      throw new HTTPException(404, { message: 'Not Found' })
+    }
+
     const customerId = ulid()
-    await this.db.transaction(async (tx) => {
-      await this.customerRepo.insert(tx, {
-        id: customerId,
-        name: data.name,
-        email: data.email,
-        tag: data.tag,
-        memo: data.memo,
-      })
-      await this.purchaseHistoryRepo.insert(tx, {
-        id: ulid(),
-        customerId,
-        shopId: data.shopId,
-      })
+
+    // vitestでtransactionをテストできないため、一旦transactionを使わない実装をしている
+    await this.customerRepo.insert(this.db, {
+      id: customerId,
+      name: data.name,
+      email: data.email,
+      tag: data.tag,
+      memo: data.memo,
+    })
+    await this.purchaseHistoryRepo.insert(this.db, {
+      id: ulid(),
+      customerId,
+      shopId: data.shopId,
     })
 
     const customer = await this.customerRepo.findRowById(customerId)

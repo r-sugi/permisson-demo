@@ -13,6 +13,7 @@ import {
   TEST_TENANT_S_ID,
   TEST_TENANT_G_ID,
   TEST_SHOP_S1_ID,
+  TEST_SHOP_G1_ID,
 } from '../test/helpers'
 
 describe('GET /api/shops - 店舗一覧', () => {
@@ -192,6 +193,16 @@ describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
     const res = await authedFetch(
       `/api/tenants/${TEST_TENANT_S_ID}/shops/${TEST_SHOP_S1_ID}`,
+      token,
+      { method: 'DELETE' },
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('tenant_owner(S社): URL は自テナントだが shopId が他テナント店舗なら 404', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch(
+      `/api/tenants/${TEST_TENANT_S_ID}/shops/${TEST_SHOP_G1_ID}`,
       token,
       { method: 'DELETE' },
     )

@@ -152,9 +152,23 @@ export const resolveCustomerViaShop =
   async (repo, auth) => {
     const history = await repo.purchaseHistory.findByCustomerId(customerId)
     if (!history) return false
-    const assignment = await repo.shopAssignment
-      .findByUserIdAndShopId(auth.userId, history.shopId)
+    const shop = await repo.shop.findById(history.shopId)
+    if (!shop || shop.deletedAt) return false
+    // tenant_owner / tenant_staff / developer はテナント境界で許可。それ以外は shop_assignment で判定。
+    if (auth.role === 'tenant_owner' || auth.role === 'tenant_staff' || auth.role === 'developer') {
+      return shop.tenantId === auth.tenantId
+    }
+    const assignment = await repo.shopAssignment.findByUserIdAndShopId(auth.userId, history.shopId)
     return assignment !== null
+  }
+
+export const resolveShopInTenantContext =
+  (tenantId: TenantId, shopId: ShopId): RelationResolver =>
+  async (repo, auth) => {
+    if (auth.tenantId !== tenantId) return false
+    const shop = await repo.shop.findById(shopId)
+    if (!shop || shop.deletedAt) return false
+    return shop.tenantId === auth.tenantId
   }
 ```
 

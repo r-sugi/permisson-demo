@@ -13,6 +13,7 @@ import {
   TEST_TENANT_S_ID,
   TEST_TENANT_G_ID,
   TEST_SHOP_S1_ID,
+  TEST_SHOP_G1_ID,
 } from '../test/helpers'
 
 /** authorize の PBAC 403 本文（JSON またはプレーンテキスト） */
@@ -133,6 +134,16 @@ describe('POST /api/customers - 顧客作成', () => {
     const body = await res.json() as { id: string; name: string }
     expect(body.name).toBe('Bob経由顧客')
   })
+
+  it('tenant_owner(S社): 他テナント店舗の shopId では ReBAC で 404', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers', token, 'POST', {
+      name: '越境作成',
+      email: 'cross@test.com',
+      shopId: TEST_SHOP_G1_ID,
+    })
+    expect(res.status).toBe(404)
+  })
 })
 
 describe('PATCH /api/customers/:id - 顧客更新', () => {
@@ -185,7 +196,7 @@ describe('PATCH /api/customers/:id - 顧客更新', () => {
     expect(body.name).toBe('Bob更新')
   })
 
-  it('tenant_owner: 別テナント顧客は authorize 通過後もスコープ外で 404', async () => {
+  it('tenant_owner: 別テナント顧客は ReBAC（またはリポジトリ）で 404', async () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedJsonFetch('/api/customers/cust-g1-1', token, 'PATCH', {
       name: '越境更新',

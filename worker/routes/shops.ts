@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { HonoEnv } from '../type'
-import { TenantId } from 'shared/permission/types'
+import { ShopId, TenantId } from 'shared/permission/types'
 import { useResolver } from 'shared/permission/scope/resolver-map'
 import { authorize } from '../middleware/authorize'
 
@@ -37,7 +37,10 @@ export const tenantShopRoutes = new Hono<HonoEnv>()
       policy: { target: 'settings', action: 'deleteShop' },
       relation: {
         resolver: (c) =>
-          useResolver('tenant', { tenantId: TenantId(c.req.param('tenantId') ?? '') }),
+          useResolver('shopInTenant', {
+            tenantId: TenantId(c.req.param('tenantId') ?? ''),
+            shopId: ShopId(c.req.param('shopId') ?? ''),
+          }),
       },
     }),
     async (c) => {

@@ -5,12 +5,14 @@ import {
   resolveShopAssignment,
   resolveShopViaTenant,
   resolveCustomerViaShop,
+  resolveShopInTenantContext,
 } from './resolvers'
 
 type ResolverArgMap = {
   tenant: { tenantId: TenantId }
   shop: { shopId: ShopId }
   shopViaTenant: { shopId: ShopId }
+  shopInTenant: { tenantId: TenantId; shopId: ShopId }
   customerViaShop: { customerId: CustomerId }
 }
 
@@ -20,6 +22,7 @@ const RESOLVER_MAP: {
   tenant: ({ tenantId }) => resolveTenantAssignment(tenantId),
   shop: ({ shopId }) => resolveShopAssignment(shopId),
   shopViaTenant: ({ shopId }) => resolveShopViaTenant(shopId),
+  shopInTenant: ({ tenantId, shopId }) => resolveShopInTenantContext(tenantId, shopId),
   customerViaShop: ({ customerId }) => resolveCustomerViaShop(customerId),
 }
 
