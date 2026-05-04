@@ -104,11 +104,14 @@ export function DashboardPage() {
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">権限一覧</h2>
         <div className="space-y-6">
-          {sections.map(({ dep, title, badge }) => {
+          {sections.map(({ dep, title, badge }, sectionIndex) => {
             const depRows = rows.filter((r) => r.dependency === dep)
             const cats = [...new Set(depRows.map((r) => r.category))]
             return (
               <div key={dep}>
+                {sectionIndex > 0 && (
+                  <hr className="my-2 mb-6 border-0 border-t border-gray-200" aria-hidden />
+                )}
                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold mb-3 ${badge}`}>
                   <span>{dep === 'role' ? '👤' : '📋'}</span>
                   {title}
