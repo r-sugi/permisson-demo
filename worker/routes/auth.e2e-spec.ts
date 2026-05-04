@@ -10,7 +10,7 @@ describe('POST /api/auth/seed', () => {
     const res = await SELF.fetch('http://localhost/api/auth/seed', { method: 'POST' })
     expect(res.status).toBe(200)
     const body = await res.json() as { users: unknown[]; password: string }
-    expect(body.users).toHaveLength(12)
+    expect(body.users).toHaveLength(24)
     expect(body.password).toBe('password')
   })
 })

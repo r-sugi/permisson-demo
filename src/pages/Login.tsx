@@ -39,11 +39,14 @@ const SEED_USERS = [
 const ROLE_ORDER = ['tenant_owner', 'tenant_staff', 'shop_owner', 'shop_staff'] as const
 const PLAN_ORDER = ['pro', 'basic', 'starter'] as const
 
-type SeedUser = typeof SEED_USERS[number]
+type SeedUser = (typeof SEED_USERS)[number]
+type SeedUserWithTenant = Extract<SeedUser, { tenant: string }>
+type SeedUserWithShop = Extract<SeedUser, { shop: string }>
 
 function getTenant(u: SeedUser): string {
-  if ('tenant' in u) return u.tenant
-  return u.shop.split(' ')[0]
+  if ('tenant' in u) return (u as SeedUserWithTenant).tenant
+  const s = u as SeedUserWithShop
+  return s.shop.split(' ')[0] ?? s.shop
 }
 
 const grouped: Record<string, SeedUser[]> = {}

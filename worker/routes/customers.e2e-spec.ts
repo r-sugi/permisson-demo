@@ -12,7 +12,23 @@ import {
   TEST_USER_IRIS,
   TEST_TENANT_S_ID,
   TEST_TENANT_G_ID,
+  TEST_SHOP_S1_ID,
 } from '../test/helpers'
+
+/** authorize の PBAC 403 本文（JSON またはプレーンテキスト） */
+async function expectPermissionDenied(res: Response, expectedSuffix: string) {
+  expect(res.status).toBe(403)
+  const raw = await res.text()
+  const message = (() => {
+    try {
+      const j = JSON.parse(raw) as { message?: string }
+      return j.message ?? raw
+    } catch {
+      return raw
+    }
+  })()
+  expect(message).toContain(`Permission denied: ${expectedSuffix}`)
+}
 
 describe('GET /api/customers - スコープ解決', () => {
   beforeEach(() => resetDb())
@@ -44,7 +60,7 @@ describe('GET /api/customers - スコープ解決', () => {
   it('shop_staff: 403 (customer.read = false)', async () => {
     const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers', token)
-    expect(res.status).toBe(403)
+    await expectPermissionDenied(res, 'customer.read')
   })
 
   it('tenant_owner(G社/starter): 別テナントの顧客1件のみ', async () => {
@@ -69,6 +85,7 @@ describe('POST /api/customers - 顧客作成', () => {
     const res = await authedJsonFetch('/api/customers', token, 'POST', {
       name: '新規顧客',
       email: 'newcust@test.com',
+      shopId: TEST_SHOP_S1_ID,
       tag: 'NEW',
     })
     expect(res.status).toBe(201)
@@ -83,7 +100,7 @@ describe('POST /api/customers - 顧客作成', () => {
       name: '不正作成',
       email: 'illegal@test.com',
     })
-    expect(res.status).toBe(403)
+    await expectPermissionDenied(res, 'customer.create')
   })
 
   it('shop_staff: 403 (customer.create = false)', async () => {
@@ -100,8 +117,21 @@ describe('POST /api/customers - 顧客作成', () => {
     const res = await authedJsonFetch('/api/customers', token, 'POST', {
       name: 'テスト',
       email: 'not-email',
+      shopId: TEST_SHOP_S1_ID,
     })
     expect(res.status).toBe(400)
+  })
+
+  it('tenant_staff: 201 で顧客を作成できる（PBAC は tenant_owner と同等）', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers', token, 'POST', {
+      name: 'Bob経由顧客',
+      email: 'bobcust@test.com',
+      shopId: TEST_SHOP_S1_ID,
+    })
+    expect(res.status).toBe(201)
+    const body = await res.json() as { id: string; name: string }
+    expect(body.name).toBe('Bob経由顧客')
   })
 })
 
@@ -142,7 +172,25 @@ describe('PATCH /api/customers/:id - 顧客更新', () => {
     const res = await authedJsonFetch('/api/customers/cust-s1-1', token, 'PATCH', {
       name: '不正更新',
     })
-    expect(res.status).toBe(403)
+    await expectPermissionDenied(res, 'customer.update')
+  })
+
+  it('tenant_staff: 200 でスコープ内顧客を更新', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-s1-1', token, 'PATCH', {
+      name: 'Bob更新',
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json() as { name: string }
+    expect(body.name).toBe('Bob更新')
+  })
+
+  it('tenant_owner: 別テナント顧客は authorize 通過後もスコープ外で 404', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-g1-1', token, 'PATCH', {
+      name: '越境更新',
+    })
+    expect(res.status).toBe(404)
   })
 })
 
@@ -164,7 +212,13 @@ describe('DELETE /api/customers/:id - 顧客削除', () => {
   it('shop_staff: 403 (customer.delete = false)', async () => {
     const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers/cust-s1-1', token, { method: 'DELETE' })
-    expect(res.status).toBe(403)
+    await expectPermissionDenied(res, 'customer.delete')
+  })
+
+  it('tenant_staff: 200 で削除', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/cust-s2-1', token, { method: 'DELETE' })
+    expect(res.status).toBe(200)
   })
 })
 
@@ -183,7 +237,7 @@ describe('GET /api/customers/export - CSVエクスポート', () => {
   it('tenant_owner(starter): 403 (customer.exportCsv = false)', async () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
     const res = await authedFetch('/api/customers/export', token)
-    expect(res.status).toBe(403)
+    await expectPermissionDenied(res, 'customer.exportCsv')
   })
 
   it('shop_staff: 403 (customer.exportCsv = false)', async () => {
@@ -196,5 +250,13 @@ describe('GET /api/customers/export - CSVエクスポート', () => {
     const token = await createTestJwt(TEST_USER_IRIS, 'shop_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers/export', token)
     expect(res.status).toBe(200)
+  })
+
+  it('tenant_staff(pro): 200 でエクスポート成功', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/export', token)
+    expect(res.status).toBe(200)
+    const body = await res.json() as { count: number }
+    expect(body.count).toBeGreaterThan(0)
   })
 })

@@ -5,6 +5,7 @@ import {
   authedFetch,
   authedJsonFetch,
   TEST_USER_ALICE,
+  TEST_USER_BOB,
   TEST_USER_EVE,
   TEST_USER_GRACE,
   TEST_USER_HENRY,
@@ -100,6 +101,17 @@ describe('POST /api/tenants/:tenantId/shops - 店舗作成', () => {
     expect(res.status).toBe(404)
   })
 
+  it('tenant_owner(G社): S社テナントURLへの POST は ReBAC で 404', async () => {
+    const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
+    const res = await authedJsonFetch(
+      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
+      token,
+      'POST',
+      { name: 'GからSへ不正作成' },
+    )
+    expect(res.status).toBe(404)
+  })
+
   it('tenant_owner(G社/starter): starter上限5店なので作成可能', async () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
     const res = await authedJsonFetch(
@@ -109,6 +121,19 @@ describe('POST /api/tenants/:tenantId/shops - 店舗作成', () => {
       { name: 'G社 追加店舗' },
     )
     expect(res.status).toBe(201)
+  })
+
+  it('tenant_staff(S社/pro): 201 で店舗作成（PBAC は tenant_owner と同等）', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch(
+      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
+      token,
+      'POST',
+      { name: 'Bob経由店舗' },
+    )
+    expect(res.status).toBe(201)
+    const body = await res.json() as { name: string }
+    expect(body.name).toBe('Bob経由店舗')
   })
 })
 
@@ -153,7 +178,7 @@ describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
     expect(res.status).toBe(403)
   })
 
-  it('tenant_owner(G社): S社テナントIDでは 404 (ReBAC失敗)', async () => {
+  it('shop_owner(G社): 他テナントのURLでは settings.deleteShop=false により 403 (PBAC)', async () => {
     const token = await createTestJwt(TEST_USER_KATE, 'shop_owner', TEST_TENANT_G_ID)
     const res = await authedFetch(
       `/api/tenants/${TEST_TENANT_S_ID}/shops/${TEST_SHOP_S1_ID}`,
@@ -161,5 +186,25 @@ describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
       { method: 'DELETE' },
     )
     expect(res.status).toBe(403)
+  })
+
+  it('tenant_owner(G社): S社テナントIDでは ReBAC 不一致で 404', async () => {
+    const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
+    const res = await authedFetch(
+      `/api/tenants/${TEST_TENANT_S_ID}/shops/${TEST_SHOP_S1_ID}`,
+      token,
+      { method: 'DELETE' },
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('tenant_staff(S社): 200 で論理削除（PBAC・ReBAC ともに許可）', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch(
+      `/api/tenants/${TEST_TENANT_S_ID}/shops/test-shop-s2`,
+      token,
+      { method: 'DELETE' },
+    )
+    expect(res.status).toBe(200)
   })
 })

@@ -10,11 +10,13 @@ vi.mock('./permissionContext')
 const mockUsePermissionContext = usePermissionContext as MockedFunction<typeof usePermissionContext>
 
 function makeMe(partial: Partial<MeData>): MeData {
-  return {
+  const base: MeData = {
     id: 'user-1',
     email: 'test@example.com',
     role: 'tenant_owner',
     plan: 'pro',
+    tenantName: 'Test',
+    shopScope: '全て',
     permissions: {
       customer: {
         create: true,
@@ -32,7 +34,13 @@ function makeMe(partial: Partial<MeData>): MeData {
       },
       shop: { read: true },
     },
+  }
+  return {
+    ...base,
     ...partial,
+    tenantName: partial.tenantName !== undefined ? partial.tenantName : base.tenantName,
+    shopScope: partial.shopScope !== undefined ? partial.shopScope : base.shopScope,
+    permissions: partial.permissions ?? base.permissions,
   }
 }
 

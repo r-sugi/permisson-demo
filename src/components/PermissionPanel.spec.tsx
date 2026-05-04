@@ -17,6 +17,8 @@ const tenantOwnerProMe: MeData = {
   email: 'alice@example.com',
   role: 'tenant_owner',
   plan: 'pro',
+  tenantName: 'A社',
+  shopScope: '全て',
   permissions: {
     customer: { create: true, read: true, update: true, delete: true, exportCsv: true, exportCsvLimit: EXPORT_LIMIT_UNLIMITED },
     settings: { createShop: true, updateShop: true, deleteShop: true, createShopLimit: SHOP_LIMIT_UNLIMITED },
@@ -29,6 +31,8 @@ const shopStaffMe: MeData = {
   email: 'henry@example.com',
   role: 'shop_staff',
   plan: 'pro',
+  tenantName: 'A社',
+  shopScope: 'A社 渋谷店',
   permissions: {
     customer: { create: false, read: false, update: false, delete: false, exportCsv: false, exportCsvLimit: 0 },
     settings: { createShop: false, updateShop: false, deleteShop: false, createShopLimit: 0 },
