@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { schema } from '../rdb/index'
-import type { PurchaseHistoryRepository as PurchaseHistoryRepositoryPort } from 'shared/permission/scope/resolver-types'
+import type { PurchaseHistoryRepository as PurchaseHistoryRepositoryPort } from '@shared/permission/scope/resolver-types'
 
 export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort {
   constructor(private readonly db: DrizzleDb) {}

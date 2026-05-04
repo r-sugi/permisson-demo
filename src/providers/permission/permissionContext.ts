@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
-import type { PermissionsMap } from 'shared/permission/permissions'
-import type { Role, Plan } from 'shared/permission/types'
+import type { PermissionsMap } from '@shared/permission/permissions'
+import type { Role, Plan } from '@shared/permission/types'
 
 export type MeData = {
   id: string

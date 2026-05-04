@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { usePermission } from '@/providers/permission/usePermission'
-import type { PolicyTarget } from 'shared/permission/policy/context'
+import type { PolicyTarget } from '@shared/permission/policy/context'
 
 type Props = {
   target: PolicyTarget

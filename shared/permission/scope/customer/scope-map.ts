@@ -1,4 +1,4 @@
-import type { Relation } from '../types'
+import type { Relation } from '@shared/permission/scope/types'
 import type { CustomerScope } from './scope'
 
 // Worker 層から注入する実装クラスのファクトリ型

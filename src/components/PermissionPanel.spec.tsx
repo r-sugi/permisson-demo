@@ -4,7 +4,7 @@ import { PermissionPanel } from './PermissionPanel'
 import { usePermissionContext } from '@/providers/permission/permissionContext'
 import { usePermission } from '@/providers/permission/usePermission'
 import type { MeData } from '@/providers/permission/permissionContext'
-import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
 
 vi.mock('@/providers/permission/permissionContext')
 vi.mock('@/providers/permission/usePermission')

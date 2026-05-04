@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import type { AuthContext } from '../types'
-import { TenantId, ShopId } from '../types'
+import type { AuthContext } from '@shared/permission/types'
+import { TenantId, ShopId } from '@shared/permission/types'
 import type { Repositories } from './resolver-types'
 import {
   resolveTenantAssignment,

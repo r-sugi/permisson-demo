@@ -1,5 +1,5 @@
 import type { RelationResolver } from './resolver-types'
-import type { TenantId, ShopId, CustomerId } from '../types'
+import type { TenantId, ShopId, CustomerId } from '@shared/permission/types'
 import {
   resolveTenantAssignment,
   resolveShopAssignment,

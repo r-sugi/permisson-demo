@@ -1,7 +1,10 @@
+import { HTTPException } from 'hono/http-exception'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { Hono } from 'hono'
 import { jwt } from 'hono/jwt'
 import { cors } from 'hono/cors'
 import { sql } from 'drizzle-orm'
+import { isMyAppError } from '@shared/error'
 import type { HonoEnv } from './type'
 import { createDatabaseConnection } from './services/database.service'
 import { authContextMiddleware } from './middleware/auth'
@@ -11,6 +14,16 @@ import { customerRoutes } from './routes/customers'
 import { shopListRoutes, tenantShopRoutes } from './routes/shops'
 
 export const app = new Hono<HonoEnv>()
+  .onError((err, c) => {
+    if (isMyAppError(err)) {
+      return c.json({ message: err.message }, err.status as ContentfulStatusCode)
+    }
+    if (err instanceof HTTPException) {
+      return err.getResponse()
+    }
+    console.error(err)
+    return c.json({ message: 'Internal Server Error' }, 500)
+  })
 
   // DB 接続ミドルウェア（全 /api/* に適用）
   .use('/api/*', async (c, next) => {

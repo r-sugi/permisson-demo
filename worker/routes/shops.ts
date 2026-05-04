@@ -2,8 +2,8 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { HonoEnv } from '../type'
-import { ShopId, TenantId } from 'shared/permission/types'
-import { useResolver } from 'shared/permission/scope/resolver-map'
+import { ShopId, TenantId } from '@shared/permission/types'
+import { useResolver } from '@shared/permission/scope/resolver-map'
 import { authorize } from '../middleware/authorize'
 
 // GET /api/shops - 店舗一覧

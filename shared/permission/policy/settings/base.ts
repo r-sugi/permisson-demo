@@ -1,4 +1,4 @@
-import { PolicyBase } from '../base'
+import { PolicyBase } from '@shared/permission/policy/base'
 import type { SettingsPermissions, SettingsPlanFeatures } from './types'
 
 export abstract class SettingsPolicyBase extends PolicyBase {

@@ -1,5 +1,5 @@
 import { hc } from 'hono/client'
-import type { AppType } from '../../worker/app-type'
+import type { AppType } from '@worker/app-type'
 
 /** Hono RPC クライアント（ルート型は Worker の `AppType` と同期） */
 export const apiClient = hc<AppType>('/', {

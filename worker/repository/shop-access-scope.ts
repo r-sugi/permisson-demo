@@ -1,4 +1,4 @@
-import type { Relation } from 'shared/permission/scope/types'
+import type { Relation } from '@shared/permission/scope/types'
 import type { ShopRow } from '../rdb/models/shops'
 import { ShopRepository } from './shop.repository'
 

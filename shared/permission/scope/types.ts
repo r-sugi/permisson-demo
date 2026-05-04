@@ -1,4 +1,4 @@
-import type { TenantId, ShopId, Role } from '../types'
+import type { TenantId, ShopId, Role } from '@shared/permission/types'
 
 /** Relation の tenant_assignment と同期する単一ソース */
 export const TENANT_ASSIGNMENT_ROLES = ['tenant_owner', 'tenant_staff', 'developer'] as const

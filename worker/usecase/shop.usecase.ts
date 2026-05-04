@@ -1,8 +1,8 @@
 import { HTTPException } from 'hono/http-exception'
 import { ulid } from 'ulidx'
-import type { AuthContext } from 'shared/permission/types'
-import { POLICY_MAP } from 'shared/permission/policy/context'
-import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
+import type { AuthContext } from '@shared/permission/types'
+import { POLICY_MAP } from '@shared/permission/policy/context'
+import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
 import type { ShopAccessRepository } from '../repository/shop-access.repository'
 import type { ShopRepository } from '../repository/shop.repository'
 

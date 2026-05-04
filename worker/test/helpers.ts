@@ -2,7 +2,7 @@ import { env, SELF } from 'cloudflare:test'
 import { drizzle } from 'drizzle-orm/d1'
 import { sign } from 'hono/jwt'
 import { schema } from '../rdb/index'
-import type { Role } from 'shared/permission/types'
+import type { Role } from '@shared/permission/types'
 
 // ─────────────────────────────────────────────
 // 定数

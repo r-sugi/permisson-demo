@@ -2,7 +2,7 @@ import { eq, inArray } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { schema } from '../rdb/index'
-import type { CustomerScope } from 'shared/permission/scope/customer/scope'
+import type { CustomerScope } from '@shared/permission/scope/customer/scope'
 import { UserRelationRepository } from './user-relation.repository'
 import { createCustomerScopeMap } from './customer-scope'
 

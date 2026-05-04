@@ -12,6 +12,8 @@
     "composite": true,
     "types": ["@cloudflare/workers-types"],
     "paths": {
+      "@shared/*": ["./shared/*"],
+      "@worker/*": ["./worker/*"],
       "shared/*": ["./shared/*"]
     }
   },

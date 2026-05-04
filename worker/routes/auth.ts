@@ -7,9 +7,9 @@ import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
 import { schema } from '../rdb/index'
-import type { Role } from 'shared/permission/types'
-import { isTenantAssignmentRole } from 'shared/permission/scope/types'
-import { buildPermissionsMap } from 'shared/permission/permissions'
+import type { Role } from '@shared/permission/types'
+import { isTenantAssignmentRole } from '@shared/permission/scope/types'
+import { buildPermissionsMap } from '@shared/permission/permissions'
 // ─────────────────────────────────────────────
 // パスワードハッシュ（Web Crypto API）
 // ─────────────────────────────────────────────

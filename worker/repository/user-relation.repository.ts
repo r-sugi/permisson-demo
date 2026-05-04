@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
-import type { Role } from 'shared/permission/types'
-import { isTenantAssignmentRole, type Relation } from 'shared/permission/scope/types'
+import type { Role } from '@shared/permission/types'
+import { isTenantAssignmentRole, type Relation } from '@shared/permission/scope/types'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
 

@@ -1,5 +1,5 @@
 import type { RelationResolver } from './resolver-types'
-import type { TenantId, ShopId } from '../types'
+import type { TenantId, ShopId } from '@shared/permission/types'
 import { isTenantAssignmentRole } from './types'
 
 export const resolveTenantAssignment =

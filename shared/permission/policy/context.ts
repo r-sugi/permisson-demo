@@ -1,4 +1,4 @@
-import type { PolicyContext } from '../types'
+import type { PolicyContext } from '@shared/permission/types'
 import { TenantOwnerCustomerPolicy } from './customer/roles/tenant-owner'
 import { ShopOwnerCustomerPolicy } from './customer/roles/shop-owner'
 import { ShopStaffCustomerPolicy } from './customer/roles/shop-staff'

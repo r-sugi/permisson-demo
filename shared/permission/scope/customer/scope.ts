@@ -1,4 +1,4 @@
-import { HTTPException } from 'hono/http-exception'
+import { MyAppError } from '@shared/error'
 
 export interface CustomerScope {
   resolveIds(): Promise<string[]>
@@ -13,9 +13,7 @@ export abstract class BaseCustomerScope implements CustomerScope {
     const accessibleSet = new Set(accessibleIds)
     const invalidIds = customerIds.filter((id) => !accessibleSet.has(id))
     if (invalidIds.length > 0) {
-      throw new HTTPException(403, {
-        message: 'アクセス権のないカスタマーIDが含まれています',
-      })
+      throw new MyAppError(403, 'アクセス権のないカスタマーIDが含まれています')
     }
     return customerIds
   }

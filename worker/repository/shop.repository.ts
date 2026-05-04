@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
 import type { ShopRow } from '../rdb/models/shops'
-import type { ShopRepository as ShopRepositoryPort } from 'shared/permission/scope/resolver-types'
+import type { ShopRepository as ShopRepositoryPort } from '@shared/permission/scope/resolver-types'
 
 export class ShopRepository implements ShopRepositoryPort {
   constructor(private readonly db: DrizzleDb) {}

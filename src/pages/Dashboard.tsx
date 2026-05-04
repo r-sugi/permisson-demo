@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { usePermissionContext } from '@/providers/permission/permissionContext'
-import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
 
 type PermissionRow = {
   category: string

@@ -1,5 +1,5 @@
-import { SettingsPolicyBase } from '../base'
-import type { SettingsPermissions, SettingsPlanFeatures } from '../types'
+import { SettingsPolicyBase } from '@shared/permission/policy/settings/base'
+import type { SettingsPermissions, SettingsPlanFeatures } from '@shared/permission/policy/settings/types'
 
 // shop_owner / shop_staff は shop 管理操作を一切できない
 export class ShopOwnerSettingsPolicy extends SettingsPolicyBase {

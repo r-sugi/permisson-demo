@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react'
 import { usePermission } from './usePermission'
 import { usePermissionContext } from './permissionContext'
 import type { MeData } from './permissionContext'
-import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
 
 vi.mock('./permissionContext')
 

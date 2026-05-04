@@ -1,6 +1,6 @@
 import { usePermissionContext } from '@/providers/permission/permissionContext'
 import { usePermission } from '@/providers/permission/usePermission'
-import type { PolicyTarget } from 'shared/permission/policy/context'
+import type { PolicyTarget } from '@shared/permission/policy/context'
 
 type BadgeItem = {
   label: string

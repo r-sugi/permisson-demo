@@ -1,7 +1,7 @@
 import type { Context, Next } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
-import type { AuthContext, Role, Plan } from 'shared/permission/types'
+import type { AuthContext, Role, Plan } from '@shared/permission/types'
 import { SubscriptionRepository } from '../repository/subscription.repository'
 
 type JwtPayload = {

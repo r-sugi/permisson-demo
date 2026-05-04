@@ -1,4 +1,4 @@
-import type { AuthContext } from '../types'
+import type { AuthContext } from '@shared/permission/types'
 
 export interface ShopAssignmentRepository {
   findByUserIdAndShopId(

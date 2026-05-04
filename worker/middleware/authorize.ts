@@ -2,13 +2,13 @@ import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
-import type { AuthContext, PolicyContext } from 'shared/permission/types'
-import type { RelationResolver } from 'shared/permission/scope/resolver-types'
+import type { AuthContext, PolicyContext } from '@shared/permission/types'
+import type { RelationResolver } from '@shared/permission/scope/resolver-types'
 import {
   POLICY_MAP,
   type PolicyOption,
   buildPermissionDeniedMessage,
-} from 'shared/permission/policy/context'
+} from '@shared/permission/policy/context'
 
 type AuthorizeOptions = {
   policy?: PolicyOption

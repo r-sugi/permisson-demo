@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm'
-import type { Relation } from 'shared/permission/scope/types'
-import type { CustomerScope } from 'shared/permission/scope/customer/scope'
-import { BaseCustomerScope } from 'shared/permission/scope/customer/scope'
+import type { Relation } from '@shared/permission/scope/types'
+import type { CustomerScope } from '@shared/permission/scope/customer/scope'
+import { BaseCustomerScope } from '@shared/permission/scope/customer/scope'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
 

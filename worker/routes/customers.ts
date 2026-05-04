@@ -2,8 +2,8 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import type { HonoEnv } from '../type'
-import { CustomerId, ShopId } from 'shared/permission/types'
-import { useResolver } from 'shared/permission/scope/resolver-map'
+import { CustomerId, ShopId } from '@shared/permission/types'
+import { useResolver } from '@shared/permission/scope/resolver-map'
 import { authorize } from '../middleware/authorize'
 
 // Gate2 relation: 単一リソース ID または POST body の shopId。一覧・エクスポートは CustomerRepository のスコープに委ねる。

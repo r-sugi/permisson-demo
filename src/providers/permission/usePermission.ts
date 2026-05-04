@@ -1,7 +1,7 @@
 import { usePermissionContext } from './permissionContext'
-import { hasPermissionInMap } from 'shared/permission/permissions'
-import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
-import type { PolicyTarget } from 'shared/permission/policy/context'
+import { hasPermissionInMap } from '@shared/permission/permissions'
+import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
+import type { PolicyTarget } from '@shared/permission/policy/context'
 
 export function usePermission() {
   const { me } = usePermissionContext()
