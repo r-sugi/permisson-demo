@@ -1,0 +1,50 @@
+import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod'
+import type { HonoEnv } from '../type'
+import { TenantId } from 'shared/permission/types'
+import { authorize } from '../middleware/authorize'
+
+// GET /api/shops - 店舗一覧
+export const shopListRoutes = new Hono<HonoEnv>()
+  .get('/', async (c) => {
+    const shops = await c.get('usecases').shops.listShops()
+    return c.json(shops)
+  })
+
+// POST /api/tenants/:tenantId/shops / DELETE /api/tenants/:tenantId/shops/:shopId
+export const tenantShopRoutes = new Hono<HonoEnv>()
+  .post(
+    '/:tenantId/shops',
+    authorize({
+      policy: { target: 'settings', action: 'createShop' },
+      relation: {
+        resourceTable: 'tenant_assignment',
+        anyOfRoles: ['tenant_owner', 'tenant_staff'],
+        getId: (c) => TenantId(c.req.param('tenantId') ?? ''),
+      },
+    }),
+    zValidator('json', z.object({ name: z.string().min(1).max(100) })),
+    async (c) => {
+      const tenantId = c.req.param('tenantId')
+      const { name } = c.req.valid('json')
+      const shop = await c.get('usecases').shops.createShop(tenantId, name)
+      return c.json(shop, 201)
+    },
+  )
+  .delete(
+    '/:tenantId/shops/:shopId',
+    authorize({
+      policy: { target: 'settings', action: 'deleteShop' },
+      relation: {
+        resourceTable: 'tenant_assignment',
+        anyOfRoles: ['tenant_owner', 'tenant_staff'],
+        getId: (c) => TenantId(c.req.param('tenantId') ?? ''),
+      },
+    }),
+    async (c) => {
+      const shopId = c.req.param('shopId')
+      const result = await c.get('usecases').shops.deleteShop(shopId)
+      return c.json(result)
+    },
+  )

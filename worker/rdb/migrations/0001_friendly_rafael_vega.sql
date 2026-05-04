@@ -1,0 +1,1 @@
+ALTER TABLE `shop_assignments` ADD `role` text DEFAULT 'shop_staff' NOT NULL;

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "composite": true
+  },
+  "include": [
+    "vite.config.ts",
+    "drizzle.config.ts",
+    "vitest.config.unit.ts",
+    "vitest.config.e2e.ts",
+    "vitest.config.frontend.ts"
+  ]
+}

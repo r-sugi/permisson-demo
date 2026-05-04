@@ -1,0 +1,200 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import {
+  resetDb,
+  createTestJwt,
+  authedFetch,
+  authedJsonFetch,
+  TEST_USER_ALICE,
+  TEST_USER_BOB,
+  TEST_USER_EVE,
+  TEST_USER_GRACE,
+  TEST_USER_HENRY,
+  TEST_USER_IRIS,
+  TEST_TENANT_S_ID,
+  TEST_TENANT_G_ID,
+} from '../test/helpers'
+
+describe('GET /api/customers - スコープ解決', () => {
+  beforeEach(() => resetDb())
+
+  it('tenant_owner(S社/pro): テナント内の全顧客3件を取得（shopS1: 2件 + shopS2: 1件）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers', token)
+    expect(res.status).toBe(200)
+    const body = await res.json() as unknown[]
+    expect(body).toHaveLength(3) // cust-s1-1, cust-s1-2, cust-s2-1
+  })
+
+  it('tenant_staff(S社/pro): tenant_owner と同一スコープ', async () => {
+    const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers', token)
+    expect(res.status).toBe(200)
+    const body = await res.json() as unknown[]
+    expect(body).toHaveLength(3)
+  })
+
+  it('shop_owner(S社/渋谷店/pro): 担当店舗の顧客のみ2件', async () => {
+    const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers', token)
+    expect(res.status).toBe(200)
+    const body = await res.json() as unknown[]
+    expect(body).toHaveLength(2) // cust-s1-1, cust-s1-2
+  })
+
+  it('shop_staff: 403 (customer.read = false)', async () => {
+    const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers', token)
+    expect(res.status).toBe(403)
+  })
+
+  it('tenant_owner(G社/starter): 別テナントの顧客1件のみ', async () => {
+    const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
+    const res = await authedFetch('/api/customers', token)
+    expect(res.status).toBe(200)
+    const body = await res.json() as unknown[]
+    expect(body).toHaveLength(1) // cust-g1-1
+  })
+
+  it('401: JWTなしで認証エラー', async () => {
+    const res = await authedFetch('/api/customers', '')
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('POST /api/customers - 顧客作成', () => {
+  beforeEach(() => resetDb())
+
+  it('tenant_owner: 201 で顧客を作成できる', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers', token, 'POST', {
+      name: '新規顧客',
+      email: 'newcust@test.com',
+      tag: 'NEW',
+    })
+    expect(res.status).toBe(201)
+    const body = await res.json() as { id: string; name: string }
+    expect(body.name).toBe('新規顧客')
+    expect(body.id).toBeTruthy()
+  })
+
+  it('shop_owner: 403 (customer.create = false)', async () => {
+    const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers', token, 'POST', {
+      name: '不正作成',
+      email: 'illegal@test.com',
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('shop_staff: 403 (customer.create = false)', async () => {
+    const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers', token, 'POST', {
+      name: '不正作成',
+      email: 'illegal2@test.com',
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('400: バリデーションエラー（email不正）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers', token, 'POST', {
+      name: 'テスト',
+      email: 'not-email',
+    })
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/customers/:id - 顧客更新', () => {
+  beforeEach(() => resetDb())
+
+  it('tenant_owner: 200 でスコープ内顧客を更新', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-s1-1', token, 'PATCH', {
+      name: '田中一郎（更新済み）',
+      tag: 'UPDATED',
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json() as { name: string; tag: string }
+    expect(body.name).toBe('田中一郎（更新済み）')
+    expect(body.tag).toBe('UPDATED')
+  })
+
+  it('shop_owner: 200 で担当店舗の顧客を更新', async () => {
+    const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-s1-1', token, 'PATCH', {
+      name: 'Grace更新',
+    })
+    expect(res.status).toBe(200)
+  })
+
+  it('shop_owner: 404 で担当外店舗の顧客は更新できない', async () => {
+    const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
+    // cust-f1-1はF社の顧客 → shopS1のスコープ外
+    const res = await authedJsonFetch('/api/customers/cust-f1-1', token, 'PATCH', {
+      name: '不正更新',
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('shop_staff: 403 (customer.update = false)', async () => {
+    const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-s1-1', token, 'PATCH', {
+      name: '不正更新',
+    })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('DELETE /api/customers/:id - 顧客削除', () => {
+  beforeEach(() => resetDb())
+
+  it('tenant_owner: 200 で削除', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/cust-s1-1', token, { method: 'DELETE' })
+    expect(res.status).toBe(200)
+  })
+
+  it('shop_owner: 403 (customer.delete = false)', async () => {
+    const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/cust-s1-1', token, { method: 'DELETE' })
+    expect(res.status).toBe(403)
+  })
+
+  it('shop_staff: 403 (customer.delete = false)', async () => {
+    const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/cust-s1-1', token, { method: 'DELETE' })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('GET /api/customers/export - CSVエクスポート', () => {
+  beforeEach(() => resetDb())
+
+  it('tenant_owner(pro): 200 でエクスポート成功（無制限）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/export', token)
+    expect(res.status).toBe(200)
+    const body = await res.json() as { customers: unknown[]; count: number }
+    expect(body.customers).toBeDefined()
+    expect(body.count).toBeGreaterThan(0)
+  })
+
+  it('tenant_owner(starter): 403 (customer.exportCsv = false)', async () => {
+    const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
+    const res = await authedFetch('/api/customers/export', token)
+    expect(res.status).toBe(403)
+  })
+
+  it('shop_staff: 403 (customer.exportCsv = false)', async () => {
+    const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/export', token)
+    expect(res.status).toBe(403)
+  })
+
+  it('shop_owner(F社/basic): 200 でエクスポート成功（月100件）', async () => {
+    const token = await createTestJwt(TEST_USER_IRIS, 'shop_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/export', token)
+    expect(res.status).toBe(200)
+  })
+})

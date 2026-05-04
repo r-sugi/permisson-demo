@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1777837637648,
+      "tag": "0000_outgoing_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777837910482,
+      "tag": "0001_friendly_rafael_vega",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1746319200000,
+      "tag": "0002_role_to_admin_users",
+      "breakpoints": true
+    }
+  ]
+}
