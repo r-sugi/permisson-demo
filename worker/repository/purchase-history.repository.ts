@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { schema } from '../rdb/index'
 import type { PurchaseHistoryRepository as PurchaseHistoryRepositoryPort } from '@shared/permission/scope/resolver-types'
@@ -21,5 +21,35 @@ export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort 
       .get()
     if (!row) return null
     return { shopId: row.shopId }
+  }
+
+  async evaluateCustomerShopAccess(
+    customerId: string,
+    userId: string,
+    authTenantId: string,
+  ): Promise<{ allowedByTenant: boolean; allowedByShopAssignment: boolean } | null> {
+    const rows = await this.db
+      .select({
+        tenantMatch: sql<number>`max(case when ${schema.shops.tenantId} = ${authTenantId} then 1 else 0 end)`,
+        shopMatch: sql<number>`max(case when ${schema.shopAssignments.userId} is not null then 1 else 0 end)`,
+      })
+      .from(schema.purchaseHistories)
+      .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
+      .leftJoin(
+        schema.shopAssignments,
+        and(
+          eq(schema.shopAssignments.shopId, schema.purchaseHistories.shopId),
+          eq(schema.shopAssignments.userId, userId),
+        ),
+      )
+      .where(eq(schema.purchaseHistories.customerId, customerId))
+      .all()
+
+    if (rows.length === 0) return null
+    const row = rows[0]
+    return {
+      allowedByTenant: (row.tenantMatch ?? 0) === 1,
+      allowedByShopAssignment: (row.shopMatch ?? 0) === 1,
+    }
   }
 }

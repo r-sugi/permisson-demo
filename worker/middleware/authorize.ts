@@ -3,7 +3,7 @@ import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
 import type { AuthContext, PolicyContext } from '@shared/permission/types'
-import type { RelationResolver } from '@shared/permission/scope/resolver-types'
+import type { GateRelationResolver } from '@shared/permission/scope/resolver-types'
 import {
   POLICY_MAP,
   type PolicyOption,
@@ -14,7 +14,7 @@ type AuthorizeOptions = {
   policy?: PolicyOption
   /** リクエストごとに URL 等から Resolver を組み立てる（Hono の Context が必要なため） */
   relation?: {
-    resolver: (c: Context<HonoEnv>) => RelationResolver
+    resolver: (c: Context<HonoEnv>) => GateRelationResolver
   }
 }
 

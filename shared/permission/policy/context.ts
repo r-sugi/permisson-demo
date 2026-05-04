@@ -9,30 +9,49 @@ import type { CustomerPermissions, CustomerPlanFeatures } from './customer/types
 import type { SettingsPermissions, SettingsPlanFeatures } from './settings/types'
 import type { ShopPermissions } from './shop/types'
 
+/**
+ * PBAC の対象×ロール→ポリシークラスを一元管理する。
+ *
+ * - **developer / tenant_staff / system** は現仕様では **tenant_owner と同一の TenantOwner*Policy** にマッピングしている（意図的な共有）。
+ *   将来ロールごとに差分が必要になったら、専用 Policy クラスへ分割するか、下記ファクトリだけ差し替える。
+ * - **shop** ターゲットは全ロール **AllReadShopPolicy**（現仕様は閲覧のみ同一）。
+ */
+function tenantOwnerCustomerPolicy(ctx: PolicyContext) {
+  return new TenantOwnerCustomerPolicy(ctx)
+}
+
+function tenantOwnerSettingsPolicy(ctx: PolicyContext) {
+  return new TenantOwnerSettingsPolicy(ctx)
+}
+
+function allReadShopPolicy(ctx: PolicyContext) {
+  return new AllReadShopPolicy(ctx)
+}
+
 export const POLICY_MAP = {
   customer: {
-    developer: (ctx: PolicyContext) => new TenantOwnerCustomerPolicy(ctx),
-    tenant_owner: (ctx: PolicyContext) => new TenantOwnerCustomerPolicy(ctx),
-    tenant_staff: (ctx: PolicyContext) => new TenantOwnerCustomerPolicy(ctx),
+    developer: tenantOwnerCustomerPolicy,
+    tenant_owner: tenantOwnerCustomerPolicy,
+    tenant_staff: tenantOwnerCustomerPolicy,
     shop_owner: (ctx: PolicyContext) => new ShopOwnerCustomerPolicy(ctx),
     shop_staff: (ctx: PolicyContext) => new ShopStaffCustomerPolicy(ctx),
-    system: (ctx: PolicyContext) => new TenantOwnerCustomerPolicy(ctx),
+    system: tenantOwnerCustomerPolicy,
   },
   settings: {
-    developer: (ctx: PolicyContext) => new TenantOwnerSettingsPolicy(ctx),
-    tenant_owner: (ctx: PolicyContext) => new TenantOwnerSettingsPolicy(ctx),
-    tenant_staff: (ctx: PolicyContext) => new TenantOwnerSettingsPolicy(ctx),
+    developer: tenantOwnerSettingsPolicy,
+    tenant_owner: tenantOwnerSettingsPolicy,
+    tenant_staff: tenantOwnerSettingsPolicy,
     shop_owner: (ctx: PolicyContext) => new ShopOwnerSettingsPolicy(ctx),
     shop_staff: (ctx: PolicyContext) => new ShopOwnerSettingsPolicy(ctx),
-    system: (ctx: PolicyContext) => new TenantOwnerSettingsPolicy(ctx),
+    system: tenantOwnerSettingsPolicy,
   },
   shop: {
-    developer: (ctx: PolicyContext) => new AllReadShopPolicy(ctx),
-    tenant_owner: (ctx: PolicyContext) => new AllReadShopPolicy(ctx),
-    tenant_staff: (ctx: PolicyContext) => new AllReadShopPolicy(ctx),
-    shop_owner: (ctx: PolicyContext) => new AllReadShopPolicy(ctx),
-    shop_staff: (ctx: PolicyContext) => new AllReadShopPolicy(ctx),
-    system: (ctx: PolicyContext) => new AllReadShopPolicy(ctx),
+    developer: allReadShopPolicy,
+    tenant_owner: allReadShopPolicy,
+    tenant_staff: allReadShopPolicy,
+    shop_owner: allReadShopPolicy,
+    shop_staff: allReadShopPolicy,
+    system: allReadShopPolicy,
   },
 } as const
 

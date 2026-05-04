@@ -1,26 +1,20 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { schema } from '../rdb/index'
 import type { CustomerScope } from '@shared/permission/scope/customer/scope'
+import type { CustomerRow } from '../rdb/models/customers'
 import { UserRelationRepository } from './user-relation.repository'
-import { createCustomerScopeMap } from './customer-scope'
-
-// ─────────────────────────────────────────────
-// CustomerRepository
-// ─────────────────────────────────────────────
+import { createCustomerScope } from './customer-scope'
 
 export class CustomerRepository {
   private scopeCache?: CustomerScope
-  private readonly customerScopeMap: ReturnType<typeof createCustomerScopeMap>
 
   private constructor(
     private readonly userId: string,
     private readonly db: DrizzleDb,
     private readonly userRelations: UserRelationRepository,
-  ) {
-    this.customerScopeMap = createCustomerScopeMap(db)
-  }
+  ) {}
 
   static create(userId: string, db: DrizzleDb, userRelations = new UserRelationRepository(db)): CustomerRepository {
     return new CustomerRepository(userId, db, userRelations)
@@ -28,39 +22,30 @@ export class CustomerRepository {
 
   private async resolveScope(): Promise<CustomerScope> {
     if (!this.scopeCache) {
-      const { relation, resourceId } = await this.userRelations.resolveForUser(this.userId)
-      this.scopeCache = this.customerScopeMap[relation](resourceId)
+      const resolution = await this.userRelations.resolveForUser(this.userId)
+      this.scopeCache = createCustomerScope(resolution, this.db)
     }
     return this.scopeCache
   }
 
-  async findAll() {
+  async findAll(): Promise<CustomerRow[]> {
     const scope = await this.resolveScope()
-    const accessibleIds = await scope.resolveIds()
-    if (accessibleIds.length === 0) return []
-    return this.db
-      .select()
-      .from(schema.customers)
-      .where(inArray(schema.customers.id, accessibleIds))
-      .all()
+    const rows = await scope.findAllCustomerRows()
+    return rows as CustomerRow[]
   }
 
   async findById(customerId: string) {
     const scope = await this.resolveScope()
-    const accessibleIds = await scope.resolveIds()
-    if (!accessibleIds.includes(customerId)) {
+    const ok = await scope.isCustomerInScope(customerId)
+    if (!ok) {
       throw new HTTPException(404, { message: 'Not Found' })
     }
-    return this.db
-      .select()
-      .from(schema.customers)
-      .where(eq(schema.customers.id, customerId))
-      .get()
+    return this.db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).get()
   }
 
   async validateIds(customerIds: string[]): Promise<string[]> {
     const scope = await this.resolveScope()
-    return scope.validateIds(customerIds)
+    return scope.validateCustomerIds(customerIds)
   }
 
   async insert(
@@ -72,11 +57,7 @@ export class CustomerRepository {
 
   /** 作成直後の応答など、スコープ解決なしで1件取得する */
   async findRowById(customerId: string) {
-    return this.db
-      .select()
-      .from(schema.customers)
-      .where(eq(schema.customers.id, customerId))
-      .get()
+    return this.db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).get()
   }
 
   async update(customerId: string, data: { name?: string; tag?: string | null; memo?: string | null }) {

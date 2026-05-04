@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray, or, type SQL } from 'drizzle-orm'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
 import type { ShopRow } from '../rdb/models/shops'
@@ -20,6 +20,24 @@ export class ShopRepository implements ShopRepositoryPort {
   async listActiveByShopId(shopId: string): Promise<ShopRow[]> {
     const row = await this.db.select().from(schema.shops).where(eq(schema.shops.id, shopId)).get()
     return row ? [row] : []
+  }
+
+  /** 複数店舗 ID（shop_assignments のユニオン）。SQLite の変数上限を避け inArray を分割 */
+  async listActiveByShopIds(shopIds: string[]): Promise<ShopRow[]> {
+    if (shopIds.length === 0) return []
+    const limit = 900
+    if (shopIds.length <= limit) {
+      return this.db.select().from(schema.shops).where(inArray(schema.shops.id, shopIds)).all()
+    }
+    const parts: SQL[] = []
+    for (let i = 0; i < shopIds.length; i += limit) {
+      parts.push(inArray(schema.shops.id, shopIds.slice(i, i + limit)))
+    }
+    return this.db
+      .select()
+      .from(schema.shops)
+      .where(or(...parts)!)
+      .all()
   }
 
   async countActiveByTenantId(tenantId: string): Promise<number> {

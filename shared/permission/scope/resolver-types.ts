@@ -13,6 +13,13 @@ export interface ShopRepository {
 
 export interface PurchaseHistoryRepository {
   findByCustomerId(customerId: string): Promise<{ shopId: string } | null>
+
+  /** 顧客に紐づく全 purchase_histories を踏まえ、1クエリで Gate2 判定に必要なフラグを返す。履歴が無ければ null */
+  evaluateCustomerShopAccess(
+    customerId: string,
+    userId: string,
+    authTenantId: string,
+  ): Promise<{ allowedByTenant: boolean; allowedByShopAssignment: boolean } | null>
 }
 
 export type Repositories = {
@@ -21,4 +28,5 @@ export type Repositories = {
   purchaseHistory: PurchaseHistoryRepository
 }
 
-export type RelationResolver = (repo: Repositories, auth: AuthContext) => Promise<boolean>
+/** Gate 2（ReBAC）で評価する `(repo, auth) => Promise<boolean>`。`scope/types.ts` のスコープ用型と混同しないこと。 */
+export type GateRelationResolver = (repo: Repositories, auth: AuthContext) => Promise<boolean>

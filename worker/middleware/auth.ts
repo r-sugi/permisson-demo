@@ -15,6 +15,8 @@ type JwtPayload = {
 export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
   const payload = c.get('jwtPayload') as JwtPayload
 
+  // 現状は課金・解約の即時反映のため毎回 DB を参照する。
+  // 将来的にキャッシュする場合はキーを tenantId とし、subscriptions.updatedAt（要スキーマ追加）などで世代判定するか、Webhook で無効化する想定。
   const subscriptionRepo = new SubscriptionRepository(c.get('db'))
   const subscription = await subscriptionRepo.findValidByTenantId(payload.tenantId)
   if (!subscription) {

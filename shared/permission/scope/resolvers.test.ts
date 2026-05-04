@@ -29,6 +29,7 @@ function mockRepos(partial: Partial<Repositories>): Repositories {
     },
     purchaseHistory: {
       findByCustomerId: async () => null,
+      evaluateCustomerShopAccess: async () => null,
     },
     ...partial,
   }
@@ -99,14 +100,11 @@ describe('resolveCustomerViaShop', () => {
     const r = resolveCustomerViaShop('cust-1')
     const repo = mockRepos({
       purchaseHistory: {
-        findByCustomerId: async () => ({ shopId: 'shop-1' }),
-      },
-      shop: {
-        findById: async () => ({ tenantId: 'tenant-a' }),
-      },
-      shopAssignment: {
-        findByUserIdAndShopId: async (uid, sid) =>
-          uid === 'user-1' && sid === 'shop-1' ? { userId: uid, shopId: sid } : null,
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: true,
+        }),
       },
     })
     expect(await r(repo, auth({ role: 'shop_owner' }))).toBe(true)
@@ -116,10 +114,11 @@ describe('resolveCustomerViaShop', () => {
     const r = resolveCustomerViaShop('cust-1')
     const repo = mockRepos({
       purchaseHistory: {
-        findByCustomerId: async () => ({ shopId: 'shop-1' }),
-      },
-      shop: {
-        findById: async () => ({ tenantId: 'tenant-a' }),
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: false,
+        }),
       },
     })
     expect(await r(repo, auth({ role: 'tenant_owner', tenantId: 'tenant-a' }))).toBe(true)
@@ -129,10 +128,11 @@ describe('resolveCustomerViaShop', () => {
     const r = resolveCustomerViaShop('cust-1')
     const repo = mockRepos({
       purchaseHistory: {
-        findByCustomerId: async () => ({ shopId: 'shop-1' }),
-      },
-      shop: {
-        findById: async () => ({ tenantId: 'tenant-b' }),
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: false,
+          allowedByShopAssignment: false,
+        }),
       },
     })
     expect(await r(repo, auth({ role: 'tenant_owner', tenantId: 'tenant-a' }))).toBe(false)
@@ -147,9 +147,9 @@ describe('resolveCustomerViaShop', () => {
     const r = resolveCustomerViaShop('cust-1')
     const repo = mockRepos({
       purchaseHistory: {
-        findByCustomerId: async () => ({ shopId: 'shop-1' }),
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => null,
       },
-      shop: { findById: async () => null },
     })
     expect(await r(repo, auth({ role: 'tenant_owner', tenantId: 'tenant-a' }))).toBe(false)
   })
@@ -158,10 +158,11 @@ describe('resolveCustomerViaShop', () => {
     const r = resolveCustomerViaShop('cust-1')
     const repo = mockRepos({
       purchaseHistory: {
-        findByCustomerId: async () => ({ shopId: 'shop-1' }),
-      },
-      shop: {
-        findById: async () => ({ tenantId: 'tenant-a' }),
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: false,
+        }),
       },
     })
     expect(await r(repo, auth({ role: 'shop_owner' }))).toBe(false)

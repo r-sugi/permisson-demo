@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import type { HonoEnv } from '../type'
 import type { AuthContext } from '@shared/permission/types'
 import type { Repositories } from '@shared/permission/scope/resolver-types'
-import type { RelationResolver } from '@shared/permission/scope/resolver-types'
+import type { GateRelationResolver } from '@shared/permission/scope/resolver-types'
 import type { PolicyOption } from '@shared/permission/policy/context'
 import { authorize } from './authorize'
 
@@ -16,6 +16,7 @@ const mockRepos: Repositories = {
   },
   purchaseHistory: {
     findByCustomerId: async () => null,
+    evaluateCustomerShopAccess: async () => null,
   },
 }
 
@@ -114,7 +115,7 @@ describe('authorize middleware', () => {
           '/rel-ok',
           authorize({
             relation: {
-              resolver: (): RelationResolver => async () => true,
+              resolver: (): GateRelationResolver => async () => true,
             },
           }),
           (c) => c.json({ ok: true }),
@@ -136,7 +137,7 @@ describe('authorize middleware', () => {
           '/rel-deny',
           authorize({
             relation: {
-              resolver: (): RelationResolver => async () => false,
+              resolver: (): GateRelationResolver => async () => false,
             },
           }),
           (c) => c.json({ ok: true }),
@@ -149,7 +150,7 @@ describe('authorize middleware', () => {
   })
 
   describe('policy + relation', () => {
-    it('PBAC 失敗時は RelationResolver が呼ばれない', async () => {
+    it('PBAC 失敗時は GateRelationResolver が呼ばれない', async () => {
       const relationSpy = vi.fn(async (): Promise<boolean> => true)
       const auth: AuthContext = {
         userId: 'u',
@@ -187,7 +188,7 @@ describe('authorize middleware', () => {
           authorize({
             policy: { target: 'customer', action: 'read' },
             relation: {
-              resolver: (): RelationResolver => async () => false,
+              resolver: (): GateRelationResolver => async () => false,
             },
           }),
           (c) => c.json({ ok: true }),
@@ -210,7 +211,7 @@ describe('authorize middleware', () => {
           authorize({
             policy: { target: 'customer', action: 'read' },
             relation: {
-              resolver: (): RelationResolver => async () => true,
+              resolver: (): GateRelationResolver => async () => true,
             },
           }),
           (c) => c.json({ ok: true }),

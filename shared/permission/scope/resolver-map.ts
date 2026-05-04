@@ -1,4 +1,4 @@
-import type { RelationResolver } from './resolver-types'
+import type { GateRelationResolver } from './resolver-types'
 import type { TenantId, ShopId, CustomerId } from '@shared/permission/types'
 import {
   resolveTenantAssignment,
@@ -17,7 +17,7 @@ type ResolverArgMap = {
 }
 
 const RESOLVER_MAP: {
-  [K in keyof ResolverArgMap]: (args: ResolverArgMap[K]) => RelationResolver
+  [K in keyof ResolverArgMap]: (args: ResolverArgMap[K]) => GateRelationResolver
 } = {
   tenant: ({ tenantId }) => resolveTenantAssignment(tenantId),
   shop: ({ shopId }) => resolveShopAssignment(shopId),
@@ -27,16 +27,16 @@ const RESOLVER_MAP: {
 }
 
 function callResolver<T extends keyof ResolverArgMap>(
-  map: { [K in keyof ResolverArgMap]: (args: ResolverArgMap[K]) => RelationResolver },
+  map: { [K in keyof ResolverArgMap]: (args: ResolverArgMap[K]) => GateRelationResolver },
   key: T,
   args: ResolverArgMap[T],
-): RelationResolver {
+): GateRelationResolver {
   return map[key](args)
 }
 
 export function useResolver<T extends keyof ResolverArgMap>(
   key: T,
   args: ResolverArgMap[T],
-): RelationResolver {
+): GateRelationResolver {
   return callResolver(RESOLVER_MAP, key, args)
 }

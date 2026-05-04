@@ -1,11 +1,7 @@
 import type { ShopRow } from '../rdb/models/shops'
 import { ShopRepository } from './shop.repository'
 import { UserRelationRepository } from './user-relation.repository'
-import { createShopAccessScopeMap, type ShopScope } from './shop-access-scope'
-
-// ─────────────────────────────────────────────
-// ShopAccessRepository
-// ─────────────────────────────────────────────
+import { AssignedShopsScope, TenantShopScope, type ShopScope } from './shop-access-scope'
 
 /**
  * ログインユーザの assignment に応じた店舗の閲覧スコープ。
@@ -13,15 +9,12 @@ import { createShopAccessScopeMap, type ShopScope } from './shop-access-scope'
  */
 export class ShopAccessRepository {
   private scopeCache?: ShopScope
-  private readonly shopScopeMap: ReturnType<typeof createShopAccessScopeMap>
 
   private constructor(
     private readonly userId: string,
-    shopRepo: ShopRepository,
+    private readonly shopRepo: ShopRepository,
     private readonly userRelations: UserRelationRepository,
-  ) {
-    this.shopScopeMap = createShopAccessScopeMap(shopRepo)
-  }
+  ) {}
 
   static create(
     userId: string,
@@ -33,8 +26,11 @@ export class ShopAccessRepository {
 
   private async resolveScope(): Promise<ShopScope> {
     if (!this.scopeCache) {
-      const { relation, resourceId } = await this.userRelations.resolveForUser(this.userId)
-      this.scopeCache = this.shopScopeMap[relation](resourceId)
+      const resolution = await this.userRelations.resolveForUser(this.userId)
+      this.scopeCache =
+        resolution.kind === 'tenant'
+          ? new TenantShopScope(resolution.tenantId, this.shopRepo)
+          : new AssignedShopsScope(resolution.shopIds, this.shopRepo)
     }
     return this.scopeCache
   }

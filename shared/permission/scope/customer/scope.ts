@@ -1,18 +1,20 @@
 import { MyAppError } from '@shared/error'
 
 export interface CustomerScope {
-  resolveIds(): Promise<string[]>
-  validateIds(customerIds: string[]): Promise<string[]>
+  findAllCustomerRows(): Promise<unknown[]>
+  isCustomerInScope(customerId: string): Promise<boolean>
+  validateCustomerIds(customerIds: string[]): Promise<string[]>
 }
 
 export abstract class BaseCustomerScope implements CustomerScope {
-  abstract resolveIds(): Promise<string[]>
+  abstract findAllCustomerRows(): Promise<unknown[]>
+  abstract isCustomerInScope(customerId: string): Promise<boolean>
+  abstract filterAccessibleIds(customerIds: string[]): Promise<string[]>
 
-  async validateIds(customerIds: string[]): Promise<string[]> {
-    const accessibleIds = await this.resolveIds()
-    const accessibleSet = new Set(accessibleIds)
-    const invalidIds = customerIds.filter((id) => !accessibleSet.has(id))
-    if (invalidIds.length > 0) {
+  async validateCustomerIds(customerIds: string[]): Promise<string[]> {
+    const unique = [...new Set(customerIds)]
+    const accessible = await this.filterAccessibleIds(unique)
+    if (accessible.length !== unique.length) {
       throw new MyAppError(403, 'アクセス権のないカスタマーIDが含まれています')
     }
     return customerIds

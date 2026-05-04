@@ -33,4 +33,3 @@ export type ResourceIdMap = {
 }
 
 export type Relation = RelationMap[keyof RelationMap]
-export type RelationResolver<T> = (userId: string, resource: T) => Relation | null

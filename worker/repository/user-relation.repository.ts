@@ -1,15 +1,20 @@
 import { eq } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import type { Role } from '@shared/permission/types'
-import { isTenantAssignmentRole, type Relation } from '@shared/permission/scope/types'
+import { isTenantAssignmentRole } from '@shared/permission/scope/types'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
 
-/** admin_users / shop_assignments を参照してユーザの ReBAC relation を返す。 */
+/** テナント紐付け or 店舗割当（複数行可）に基づくスコープ解決 */
+export type UserScopeResolution =
+  | { kind: 'tenant'; tenantId: string }
+  | { kind: 'shops'; shopIds: string[] }
+
+/** admin_users / shop_assignments を参照してユーザの ReBAC スコープを返す。 */
 export class UserRelationRepository {
   constructor(private readonly db: DrizzleDb) {}
 
-  async resolveForUser(userId: string): Promise<{ relation: Relation; resourceId: string }> {
+  async resolveForUser(userId: string): Promise<UserScopeResolution> {
     const user = await this.db
       .select()
       .from(schema.adminUsers)
@@ -20,19 +25,19 @@ export class UserRelationRepository {
 
     const role = user.role as Role
     if (isTenantAssignmentRole(role)) {
-      return { relation: role as Relation, resourceId: user.tenantId }
+      return { kind: 'tenant', tenantId: user.tenantId }
     }
 
-    const shopAssignment = await this.db
-      .select()
+    const assignments = await this.db
+      .select({ shopId: schema.shopAssignments.shopId })
       .from(schema.shopAssignments)
       .where(eq(schema.shopAssignments.userId, userId))
-      .get()
+      .all()
 
-    if (shopAssignment) {
-      return { relation: 'shop_assigned', resourceId: shopAssignment.shopId }
+    if (assignments.length === 0) {
+      throw new HTTPException(403, { message: 'User has no assignment' })
     }
 
-    throw new HTTPException(403, { message: 'User has no assignment' })
+    return { kind: 'shops', shopIds: assignments.map((a) => a.shopId) }
   }
 }
