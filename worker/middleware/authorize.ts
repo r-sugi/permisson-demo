@@ -1,13 +1,10 @@
 import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
-import { eq } from 'drizzle-orm'
 import type { HonoEnv } from '../type'
-import type { AuthContext, PolicyContext, Role } from 'shared/permission/types'
-import type { Relation } from 'shared/permission/scope/types'
+import type { AuthContext, PolicyContext } from 'shared/permission/types'
 import type { RelationResolver } from 'shared/permission/scope/resolver-types'
 import { POLICY_MAP, type PolicyTarget, buildPermissionDeniedMessage } from 'shared/permission/policy/context'
-import { schema } from '../rdb/index'
 
 type PolicyOption = {
   target: PolicyTarget
@@ -51,35 +48,4 @@ export function authorize(options: AuthorizeOptions) {
 
     await next()
   })
-}
-
-// ユーザーのassignmentを引き、relationとresourceIdを返す
-export async function resolveUserRelation(
-  db: ReturnType<typeof import('../services/database.service').createDatabaseConnection>,
-  userId: string,
-): Promise<{ relation: Relation; resourceId: string }> {
-  const user = await db
-    .select()
-    .from(schema.adminUsers)
-    .where(eq(schema.adminUsers.id, userId))
-    .get()
-
-  if (!user) throw new HTTPException(403, { message: 'User not found' })
-
-  const role = user.role as Role
-  if (role === 'tenant_owner' || role === 'tenant_staff' || role === 'developer') {
-    return { relation: role as Relation, resourceId: user.tenantId }
-  }
-
-  const shopAssignment = await db
-    .select()
-    .from(schema.shopAssignments)
-    .where(eq(schema.shopAssignments.userId, userId))
-    .get()
-
-  if (shopAssignment) {
-    return { relation: 'shop_assigned', resourceId: shopAssignment.shopId }
-  }
-
-  throw new HTTPException(403, { message: 'User has no assignment' })
 }

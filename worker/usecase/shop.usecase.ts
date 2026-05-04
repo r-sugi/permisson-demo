@@ -1,39 +1,20 @@
-import { eq, isNull, and } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
-import { ulid } from "ulidx"
+import { ulid } from 'ulidx'
 import type { AuthContext } from 'shared/permission/types'
 import { POLICY_MAP } from 'shared/permission/policy/context'
 import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
-import type { DrizzleDb } from '../services/database.service'
-import { schema } from '../rdb/index'
-import { resolveUserRelation } from '../middleware/authorize'
+import type { ShopAccessRepository } from '../repository/shop-access.repository'
+import type { ShopRepository } from '../repository/shop.repository'
 
 export class ShopUseCase {
   constructor(
-    private readonly db: DrizzleDb,
+    private readonly shopRepo: ShopRepository,
+    private readonly shopAccess: ShopAccessRepository,
     private readonly auth: AuthContext,
   ) {}
 
   async listShops() {
-    const { relation, resourceId } = await resolveUserRelation(this.db, this.auth.userId)
-
-    if (relation === 'tenant_owner' || relation === 'tenant_staff' || relation === 'developer') {
-      return this.db
-        .select()
-        .from(schema.shops)
-        .where(and(eq(schema.shops.tenantId, resourceId), isNull(schema.shops.deletedAt)))
-        .all()
-    }
-
-    if (relation === 'shop_assigned') {
-      return this.db
-        .select()
-        .from(schema.shops)
-        .where(and(eq(schema.shops.id, resourceId), isNull(schema.shops.deletedAt)))
-        .all()
-    }
-
-    return []
+    return this.shopAccess.listAccessible()
   }
 
   async createShop(tenantId: string, name: string) {
@@ -43,12 +24,7 @@ export class ShopUseCase {
       shop_ids: [],
     }).listPermissions()
 
-    const currentShops = await this.db
-      .select()
-      .from(schema.shops)
-      .where(and(eq(schema.shops.tenantId, tenantId), isNull(schema.shops.deletedAt)))
-      .all()
-    const currentCount = currentShops.length
+    const currentCount = await this.shopRepo.countActiveByTenantId(tenantId)
 
     if (currentCount >= createShopLimit) {
       throw new HTTPException(422, {
@@ -57,26 +33,16 @@ export class ShopUseCase {
     }
 
     const id = ulid()
-    await this.db.insert(schema.shops).values({ id, tenantId, name }).run()
-    return this.db.select().from(schema.shops).where(eq(schema.shops.id, id)).get()
+    return this.shopRepo.insertShop({ id, tenantId, name })
   }
 
   async deleteShop(shopId: string) {
     const now = new Date().toISOString()
-    await this.db
-      .update(schema.shops)
-      .set({ deletedAt: now })
-      .where(eq(schema.shops.id, shopId))
-      .run()
+    await this.shopRepo.softDelete(shopId, now)
     return { shopId, deletedAt: now }
   }
 
   async getShopCountByTenant(tenantId: string): Promise<number> {
-    const rows = await this.db
-      .select()
-      .from(schema.shops)
-      .where(and(eq(schema.shops.tenantId, tenantId), isNull(schema.shops.deletedAt)))
-      .all()
-    return rows.length
+    return this.shopRepo.countActiveByTenantId(tenantId)
   }
 }

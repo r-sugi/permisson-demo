@@ -5,7 +5,7 @@ import { schema } from '../rdb/index'
 import type { Relation } from 'shared/permission/scope/types'
 import type { CustomerScope } from 'shared/permission/scope/customer/scope'
 import { BaseCustomerScope } from 'shared/permission/scope/customer/scope'
-import { resolveUserRelation } from '../middleware/authorize'
+import { UserRelationRepository } from './user-relation.repository'
 
 // ─────────────────────────────────────────────
 // Scope 実装（DB アクセスが必要なためWorker層に配置）
@@ -72,15 +72,16 @@ export class CustomerRepository {
   private constructor(
     private readonly userId: string,
     private readonly db: DrizzleDb,
+    private readonly userRelations: UserRelationRepository,
   ) {}
 
-  static create(userId: string, db: DrizzleDb): CustomerRepository {
-    return new CustomerRepository(userId, db)
+  static create(userId: string, db: DrizzleDb, userRelations = new UserRelationRepository(db)): CustomerRepository {
+    return new CustomerRepository(userId, db, userRelations)
   }
 
   private async resolveScope(): Promise<CustomerScope> {
     if (!this.scopeCache) {
-      const { relation, resourceId } = await resolveUserRelation(this.db, this.userId)
+      const { relation, resourceId } = await this.userRelations.resolveForUser(this.userId)
       this.scopeCache = scopeMap[relation](resourceId, this.db)
     }
     return this.scopeCache
