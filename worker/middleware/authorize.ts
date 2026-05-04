@@ -1,4 +1,4 @@
-import type { Context } from 'hono'
+import type { Context, Input } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
@@ -10,16 +10,16 @@ import {
   buildPermissionDeniedMessage,
 } from '@shared/permission/policy/context'
 
-type AuthorizeOptions = {
+type AuthorizeOptions<I extends Input = {}> = {
   policy?: PolicyOption
   /** リクエストごとに URL 等から Resolver を組み立てる（Hono の Context が必要なため） */
   relation?: {
-    resolver: (c: Context<HonoEnv>) => GateRelationResolver
+    resolver: (c: Context<HonoEnv, string, I>) => GateRelationResolver
   }
 }
 
-export function authorize(options: AuthorizeOptions) {
-  return createMiddleware<HonoEnv>(async (c, next) => {
+export function authorize<I extends Input = {}>(options: AuthorizeOptions<I>) {
+  return createMiddleware<HonoEnv, string, I>(async (c, next) => {
     const auth = c.get('auth') as AuthContext
 
     // Gate 1: PBAC（role + plan でインメモリ評価・DBアクセスなし）

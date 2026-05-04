@@ -16,7 +16,21 @@ const customerPostJsonSchema = z.object({
   memo: z.string().optional(),
 })
 
+const customerIdParamSchema = z.object({
+  id: z.string().min(1),
+})
+
 type CustomerPostJson = z.infer<typeof customerPostJsonSchema>
+
+type CustomerPostInput = {
+  in: { json: CustomerPostJson }
+  out: { json: CustomerPostJson }
+}
+
+type CustomerIdInput = {
+  in: { param: z.infer<typeof customerIdParamSchema> }
+  out: { param: z.infer<typeof customerIdParamSchema> }
+}
 
 export const customerRoutes = new Hono<HonoEnv>()
 
@@ -35,13 +49,11 @@ export const customerRoutes = new Hono<HonoEnv>()
     '/',
     authorize({ policy: { target: 'customer', action: 'create' } }),
     zValidator('json', customerPostJsonSchema),
-    authorize({
+    authorize<CustomerPostInput>({
       relation: {
         resolver: (c) =>
           useResolver('shopViaTenant', {
-            shopId: ShopId(
-              (c.req as { valid: (key: 'json') => CustomerPostJson }).valid('json').shopId,
-            ),
+            shopId: ShopId(c.req.valid('json').shopId),
           }),
       },
     }),
@@ -55,12 +67,13 @@ export const customerRoutes = new Hono<HonoEnv>()
   // PATCH /api/customers/:id - 顧客更新（スコープ内のみ）
   .patch(
     '/:id',
-    authorize({
+    zValidator('param', customerIdParamSchema),
+    authorize<CustomerIdInput>({
       policy: { target: 'customer', action: 'update' },
       relation: {
         resolver: (c) =>
           useResolver('customerViaShop', {
-            customerId: CustomerId(c.req.param('id') ?? ''),
+            customerId: CustomerId(c.req.valid('param').id),
           }),
       },
     }),
@@ -73,7 +86,7 @@ export const customerRoutes = new Hono<HonoEnv>()
       }),
     ),
     async (c) => {
-      const customerId = c.req.param('id')
+      const customerId = c.req.valid('param').id
       const updates = c.req.valid('json')
       const customer = await c.get('useCase').customer.updateCustomer(customerId, updates)
       return c.json(customer)
@@ -83,17 +96,18 @@ export const customerRoutes = new Hono<HonoEnv>()
   // DELETE /api/customers/:id - 顧客削除（スコープ内のみ）
   .delete(
     '/:id',
-    authorize({
+    zValidator('param', customerIdParamSchema),
+    authorize<CustomerIdInput>({
       policy: { target: 'customer', action: 'delete' },
       relation: {
         resolver: (c) =>
           useResolver('customerViaShop', {
-            customerId: CustomerId(c.req.param('id') ?? ''),
+            customerId: CustomerId(c.req.valid('param').id),
           }),
       },
     }),
     async (c) => {
-      const customerId = c.req.param('id')
+      const customerId = c.req.valid('param').id
       const result = await c.get('useCase').customer.deleteCustomer(customerId)
       return c.json(result)
     },

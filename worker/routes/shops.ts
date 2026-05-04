@@ -6,6 +6,25 @@ import { ShopId, TenantId } from '@shared/permission/types'
 import { useResolver } from '@shared/permission/scope/resolver-map'
 import { authorize } from '../middleware/authorize'
 
+const tenantIdParamSchema = z.object({
+  tenantId: z.string().min(1),
+})
+
+const tenantAndShopParamSchema = z.object({
+  tenantId: z.string().min(1),
+  shopId: z.string().min(1),
+})
+
+type TenantParamInput = {
+  in: { param: z.infer<typeof tenantIdParamSchema> }
+  out: { param: z.infer<typeof tenantIdParamSchema> }
+}
+
+type TenantShopParamInput = {
+  in: { param: z.infer<typeof tenantAndShopParamSchema> }
+  out: { param: z.infer<typeof tenantAndShopParamSchema> }
+}
+
 // GET /api/shops - 店舗一覧
 export const shopListRoutes = new Hono<HonoEnv>().get('/', async (c) => {
   const shops = await c.get('useCase').shop.listShops()
@@ -16,16 +35,19 @@ export const shopListRoutes = new Hono<HonoEnv>().get('/', async (c) => {
 export const tenantShopRoutes = new Hono<HonoEnv>()
   .post(
     '/:tenantId/shops',
-    authorize({
+    zValidator('param', tenantIdParamSchema),
+    authorize<TenantParamInput>({
       policy: { target: 'settings', action: 'createShop' },
       relation: {
         resolver: (c) =>
-          useResolver('tenant', { tenantId: TenantId(c.req.param('tenantId') ?? '') }),
+          useResolver('tenant', {
+            tenantId: TenantId(c.req.valid('param').tenantId),
+          }),
       },
     }),
     zValidator('json', z.object({ name: z.string().min(1).max(100) })),
     async (c) => {
-      const tenantId = c.req.param('tenantId')
+      const { tenantId } = c.req.valid('param')
       const { name } = c.req.valid('json')
       const shop = await c.get('useCase').shop.createShop(tenantId, name)
       return c.json(shop, 201)
@@ -33,18 +55,21 @@ export const tenantShopRoutes = new Hono<HonoEnv>()
   )
   .delete(
     '/:tenantId/shops/:shopId',
-    authorize({
+    zValidator('param', tenantAndShopParamSchema),
+    authorize<TenantShopParamInput>({
       policy: { target: 'settings', action: 'deleteShop' },
       relation: {
-        resolver: (c) =>
-          useResolver('shopInTenant', {
-            tenantId: TenantId(c.req.param('tenantId') ?? ''),
-            shopId: ShopId(c.req.param('shopId') ?? ''),
-          }),
+        resolver: (c) => {
+          const { tenantId, shopId } = c.req.valid('param')
+          return useResolver('shopInTenant', {
+            tenantId: TenantId(tenantId),
+            shopId: ShopId(shopId),
+          })
+        },
       },
     }),
     async (c) => {
-      const shopId = c.req.param('shopId')
+      const { shopId } = c.req.valid('param')
       const result = await c.get('useCase').shop.deleteShop(shopId)
       return c.json(result)
     },
