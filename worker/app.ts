@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { jwt } from 'hono/jwt'
 import { cors } from 'hono/cors'
+import { sql } from 'drizzle-orm'
 import type { HonoEnv } from './type'
 import { createDatabaseConnection } from './services/database.service'
 import { authContextMiddleware } from './middleware/auth'
@@ -13,7 +14,9 @@ export const app = new Hono<HonoEnv>()
 
   // DB 接続ミドルウェア（全 /api/* に適用）
   .use('/api/*', async (c, next) => {
-    c.set('db', createDatabaseConnection(c.env.DB))
+    const db = createDatabaseConnection(c.env.DB)
+    await db.run(sql`PRAGMA foreign_keys = ON`)
+    c.set('db', db)
     await next()
   })
 
