@@ -25,6 +25,7 @@ export function authorize(options: AuthorizeOptions) {
     // Gate 1: PBAC（role + plan でインメモリ評価・DBアクセスなし）
     if (options.policy) {
       const { target, action } = options.policy
+      // shop_ids: Gate1 の Policy でショップ単位の属性を参照する場合に注入する予定。現状のポリシーは role+plan のみのため空配列。
       const context: PolicyContext = { role: auth.role, plan: auth.plan, shop_ids: [] }
       const policy = POLICY_MAP[target][auth.role](context)
       const permissions = policy.listPermissions() as Record<string, unknown>

@@ -3,6 +3,8 @@
 ## ステータス
 承認済み
 
+本書は権限モデル全体（PBAC／ReBAC／データモデル／フロント連携など）と、**`authorize` の Gate 2（Resolver）詳細**を **1ファイル** に集約している。**記載と実装が食い違う場合はリポジトリ上のソースを正とする**。
+
 ## コンテキスト
 
 小売販売CRM管理アプリケーション（マルチテナント）における権限管理を設計するにあたり、以下の要件を満たす必要があった。
@@ -79,25 +81,25 @@ PBACを先に評価することでDBアクセスを最小化できる。ReBACの
 > | ブロック | 内容 | 分割先 |
 > |---|---|---|
 > | 型定義（BrandType） | `TenantId`, `ShopId` のブランド型 | `shared/permission/types.ts` |
-> | リレーション型群 | `RelationMap`, `ResourceMap`, `ResourceIdMap`, `Relation`, `RelationResolver` | `shared/permission/scope/types.ts` |
-> | registry | テーブルごとの Resolver 実装 | `shared/permission/scope/registry.ts` |
-> | resolveRelation | registry を呼び出す薄い関数 | `shared/permission/scope/registry.ts` |
+> | リレーション型群 | `RelationMap`, `ResourceMap`, `ResourceIdMap`, `Relation` 等 | `shared/permission/scope/types.ts` |
+> | Repository IF / `RelationResolver` | Gate 2 が `(repo, auth) => Promise<boolean>` で評価するための型（Drizzle 非依存） | `shared/permission/scope/resolver-types.ts` |
+> | Resolver 実装・レジストリ | `resolveShopAssignment` 等と `useResolver('tenant', { ... })` | `shared/permission/scope/resolvers.ts`, `resolver-map.ts` |
 
 ---
 
 #### shared/permission/types.ts（BrandType・Plan を追記）
 
-`Role`, `AuthContext`, `PolicyContext` に加え、BrandType・Plan・SHOP_LIMIT_UNLIMITED を同居させる。
+`Role`, `AuthContext`, `PolicyContext` に加え、BrandType・Plan・SHOP_LIMIT_UNLIMITED を同居させる。（CSV 出力上限など他リソースで同様の「無制限」定数が必要になった場合は、このファイルまたは該当 policy 側に追加する。）
 
 ```typescript
 // ================================
 // Role・Plan
 // ================================
-type Role = 'developer' | 'tenant_owner' | 'tenant_staff' | 'shop_owner' | 'shop_staff' | 'system'
-type Plan = 'starter' | 'basic' | 'pro'
+export type Role = 'developer' | 'tenant_owner' | 'tenant_staff' | 'shop_owner' | 'shop_staff' | 'system'
+export type Plan = 'starter' | 'basic' | 'pro'
 
 // Plan 定数：文字列リテラルを直接書かず、定数経由で参照する
-const PLAN = {
+export const PLAN = {
   STARTER: 'starter',
   BASIC:   'basic',
   PRO:     'pro',
@@ -106,14 +108,14 @@ const PLAN = {
 // ================================
 // コンテキスト型
 // ================================
-type AuthContext = {
+export type AuthContext = {
   userId:   string
   tenantId: string  // JWT から取得。tenant_assignment の ReBAC チェックはインメモリ照合（§B）
   role:     Role
   plan:     Plan    // JWT ではなく auth middleware で DB から取得（課金失敗の即時反映のため）
 }
 
-type PolicyContext = {
+export type PolicyContext = {
   role:     Role
   plan:     Plan
   shop_ids: string[]
@@ -122,19 +124,19 @@ type PolicyContext = {
 // ================================
 // BrandType：IDの種別を型レベルで区別する
 // ================================
-type TenantId = string & { readonly _brand: 'TenantId' }
-type ShopId   = string & { readonly _brand: 'ShopId' }
+export type TenantId = string & { readonly _brand: 'TenantId' }
+export type ShopId   = string & { readonly _brand: 'ShopId' }
+export type CustomerId = string & { readonly _brand: 'CustomerId' }
 
-const TenantId = (id: string): TenantId => id as TenantId
-const ShopId   = (id: string): ShopId   => id as ShopId
+export const TenantId = (id: string): TenantId => id as TenantId
+export const ShopId   = (id: string): ShopId   => id as ShopId
+export const CustomerId = (id: string): CustomerId => id as CustomerId
 
 // ================================
-// 数量制限：無制限を表す定数
+// 数量制限：無制限を表す定数（店舗作成上限など）
 // null より数値に統一する方が比較処理がシンプルになる
-// フロント表示では各定数と比較して「無制限」と出し分ける
 // ================================
-const SHOP_LIMIT_UNLIMITED   = Number.MAX_SAFE_INTEGER
-const EXPORT_LIMIT_UNLIMITED = Number.MAX_SAFE_INTEGER
+export const SHOP_LIMIT_UNLIMITED = Number.MAX_SAFE_INTEGER
 ```
 
 ---
@@ -142,92 +144,62 @@ const EXPORT_LIMIT_UNLIMITED = Number.MAX_SAFE_INTEGER
 #### shared/permission/scope/types.ts（relation.ts の「型定義」ブロック）
 
 ```typescript
-import { TenantId, ShopId, Role } from '../types'
+import type { TenantId, ShopId, Role } from '../types'
 
-type TenantAssignmentResource = {
+/** Relation の tenant_assignment と同期する単一ソース */
+export const TENANT_ASSIGNMENT_ROLES = ['tenant_owner', 'tenant_staff', 'developer'] as const
+export type TenantAssignmentRole = (typeof TENANT_ASSIGNMENT_ROLES)[number]
+
+export function isTenantAssignmentRole(role: Role): role is TenantAssignmentRole {
+  return (TENANT_ASSIGNMENT_ROLES as readonly Role[]).includes(role)
+}
+
+export type TenantAssignmentResource = {
   role: Role
 }
 
-type ShopAssignmentResource = {
+export type ShopAssignmentResource = {
   adminUserId: string
   shopId: ShopId
 }
 
-type RelationMap = {
-  tenant_assignment: 'tenant_owner' | 'tenant_staff' | 'developer'
-  shop_assignment:   'shop_assigned'
+export type RelationMap = {
+  tenant_assignment: TenantAssignmentRole
+  shop_assignment: 'shop_assigned'
 }
 
-type ResourceMap = {
+export type ResourceMap = {
   tenant_assignment: TenantAssignmentResource
-  shop_assignment:   ShopAssignmentResource
+  shop_assignment: ShopAssignmentResource
 }
 
-type ResourceIdMap = {
+export type ResourceIdMap = {
   tenant_assignment: TenantId
-  shop_assignment:   ShopId
+  shop_assignment: ShopId
 }
 
-type Relation = RelationMap[keyof RelationMap]
-type RelationResolver<T> = (userId: string, resource: T) => Relation | null
+export type Relation = RelationMap[keyof RelationMap]
+export type RelationResolver<T> = (userId: string, resource: T) => Relation | null
 ```
+
+`authorize` の Gate 2 が import する `RelationResolver` は **`resolver-types.ts`** にある **`(repo, auth) => Promise<boolean>`**。本ファイルの **`RelationResolver<T>`** と同名異物なので、`resolvers.ts` の `resolveCustomerViaShop` などでは **`isTenantAssignmentRole`** でテナント割当ロールを判定する一方、Gate 2 の評価は常に **`resolver-types` 側の型**に揃える。
 
 ---
 
-#### shared/permission/scope/registry.ts（純粋関数のみ・DB アクセスなし）
+#### shared/permission/scope/resolvers.ts・resolver-map.ts（Gate 2 の関係チェック）
 
-DB アクセスを伴う `resolveRelation` / `resolveUserRelation` は `shared/` に置けない（§C・§9 参照）。
-`registry` は渡された `resource` オブジェクトから Relation を返す純粋関数として実装する。
-DB からリソースを取得して `registry` を呼び出すコードは `worker/middleware/authorize.ts` に置く。
+DB アクセスを伴う処理は `shared/` に置けないため、`RelationResolver` は **`Repositories` インターフェース**（`resolver-types.ts`）経由で Worker が注入する `c.get('repo')` を受け取る。
 
-```typescript
-import type { ResourceMap, Relation, RelationResolver } from './types'
+- **具体的な関係判定**（例：`shop_assignments` を引く、`purchase_histories` 経由で顧客の店舗を解決する）は `resolvers.ts` に集約する。
+- **ルートからの組み立て**は `useResolver(key, args)`（`resolver-map.ts`）でキーと引数に型を載せる。
 
-// 純粋関数：DBアクセスなし。resource は Worker 層で DB から取得して渡す
-export const registry: {
-  [K in keyof ResourceMap]: RelationResolver<ResourceMap[K]>
-} = {
-  tenant_assignment: (_userId, resource) => {
-    return resource.role as Relation
-  },
-  shop_assignment: (userId, resource) => {
-    if (resource.adminUserId === userId) return 'shop_assigned'
-    return null
-  },
-}
-```
+`authorize` ミドルウェア本体は `RelationResolver` すなわち `(repo, auth) => Promise<boolean>` を評価するだけで、スキーマや SQL を知らない（§C・[Gate 2（ReBAC）の Resolver 詳細アーキテクチャ](#gate2-rebac-resolver-detail)参照）。
 
-#### worker/middleware/authorize.ts（DB アクセス・resolveUserRelation）
+---
 
-`registry` を呼び出すための DB 取得ロジックと `resolveUserRelation` は Worker 層に配置する。
+#### worker/repository/user-relation.repository.ts（一覧スコープ用・authorize 外）
 
-```typescript
-// Gate 2: ReBAC（DBアクセス）
-if (options.relation.resourceTable === 'tenant_assignment') {
-  // JWT の tenantId と URL の tenantId を照合するだけ（DBアクセス不要）
-  if (auth.tenantId === tenantId) {
-    relation = registry.tenant_assignment(auth.userId, { role: auth.role })
-  }
-} else if (options.relation.resourceTable === 'shop_assignment') {
-  const row = await db.select().from(schema.shopAssignments)
-    .where(eq(schema.shopAssignments.userId, auth.userId)).all()
-    .then((rows) => rows.find((r) => r.shopId === shopId) ?? null)
-  if (row) {
-    relation = registry.shop_assignment(auth.userId, {
-      adminUserId: row.userId,
-      shopId: row.shopId as ShopId,
-    })
-  }
-}
-
-// ユーザーのassignmentを引き、relationとresourceIdを返す
-export async function resolveUserRelation(
-  db: DrizzleDb,
-  userId: string
-): Promise<{ relation: Relation; resourceId: string }> {
-  // admin_users を引いて role に応じて tenant / shop の resourceId を返す
-}
-```
+`CustomerRepository` / 店舗アクセススコープが **ユーザの tenant / shop 所属**を解決するために `admin_users` / `shop_assignments` を参照する。Gate 2 の単一リソース用 Resolver とは別経路だが、同じデータモデルに基づく。
 
 ---
 
@@ -280,35 +252,31 @@ export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
 
 ---
 
-#### apps/cms/worker/middleware/authorize.ts（AuthorizeOptions + ミドルウェア本体）
+#### worker/middleware/authorize.ts（AuthorizeOptions + ミドルウェア本体）
 
 ```typescript
-import type { RelationMap, ResourceIdMap } from 'shared/permission/scope/types'
-import { resolveRelation } from 'shared/permission/scope/registry'
-import { POLICY_MAP } from 'shared/permission/policy/context'
-import type { PolicyTarget } from 'shared/permission/policy/context'
-import type { Action } from 'shared/permission/permissions'
+import type { Context } from 'hono'
+import { createMiddleware } from 'hono/factory'
+import { HTTPException } from 'hono/http-exception'
+import type { HonoEnv } from '../type'
+import type { AuthContext, PolicyContext } from '@shared/permission/types'
+import type { RelationResolver } from '@shared/permission/scope/resolver-types'
+import {
+  POLICY_MAP,
+  type PolicyOption,
+  buildPermissionDeniedMessage,
+} from '@shared/permission/policy/context'
 
-type PolicyOption = {
-  target: PolicyTarget
-  action: Action
+type AuthorizeOptions = {
+  policy?: PolicyOption
+  /** リクエストごとに URL 等から Resolver を組み立てる（Hono の Context が必要なため） */
+  relation?: {
+    resolver: (c: Context<HonoEnv>) => RelationResolver
+  }
 }
 
-type ReBACOption<K extends keyof RelationMap> = {
-  resourceTable: K
-  anyOfRoles?: RelationMap[K] | RelationMap[K][]
-  getId: (c: Context) => ResourceIdMap[K]
-}
-
-type AuthorizeOptions<K extends keyof RelationMap = keyof RelationMap> = {
-  policy?:   PolicyOption
-  relation?: ReBACOption<K>
-}
-
-export const authorize = <K extends keyof RelationMap>(
-  options: AuthorizeOptions<K>
-) =>
-  createMiddleware<{ Variables: Variables }>(async (c, next) => {
+export function authorize(options: AuthorizeOptions) {
+  return createMiddleware<HonoEnv>(async (c, next) => {
     const auth = c.get('auth') as AuthContext
 
     // Gate 1: PBAC（role + plan でインメモリ評価・DBアクセスなし）
@@ -316,31 +284,19 @@ export const authorize = <K extends keyof RelationMap>(
       const { target, action } = options.policy
       const context: PolicyContext = { role: auth.role, plan: auth.plan, shop_ids: [] }
       const policy = POLICY_MAP[target][auth.role](context)
-      const permissions = policy.listPermissions()
+      const permissions = policy.listPermissions() as Record<string, unknown>
 
       if (!permissions[action]) {
         throw new HTTPException(403, {
-          message: buildPermissionDeniedMessage(target, action)
+          message: buildPermissionDeniedMessage(target, action),
         })
       }
     }
 
-    // Gate 2: ReBAC（DBアクセス）
+    // Gate 2: ReBAC（repository 経由。authorize 本体は resolver の中身を知らない）
     if (options.relation) {
-      const resourceId = options.relation.getId(c)
-      const relation = await resolveRelation(
-        auth.userId,
-        options.relation.resourceTable,
-        resourceId
-      )
-
-      const required = options.relation.anyOfRoles
-      const allowed = !required
-        ? relation !== null
-        : Array.isArray(required)
-          ? required.includes(relation)
-          : relation === required
-
+      const relationResolver = options.relation.resolver(c)
+      const allowed = await relationResolver(c.get('repo'), auth)
       if (!allowed) {
         throw new HTTPException(404, { message: 'Not Found' })
       }
@@ -348,44 +304,262 @@ export const authorize = <K extends keyof RelationMap>(
 
     await next()
   })
+}
 ```
+
+**ロール可否は Gate 1 の `policy.action` に集約する**ため、`relation` に `anyOfRoles` 等は持たない（[Gate 2 節](#gate2-rebac-resolver-detail)の「require オプションを却下」参照）。
 
 ---
 
 #### 呼び出し側
 
 ```typescript
-// PBACのみ（カスタマー閲覧）
-app.get('/customers',
-  authorize({ policy: { target: 'customer', action: 'read' } }),
-  async (c) => { ... }
+import { useResolver } from '@shared/permission/scope/resolver-map'
+import { TenantId, ShopId } from '@shared/permission/types'
+import { authorize } from '../middleware/authorize'
+
+// PBAC のみ（カスタマー閲覧）
+app.get('/customers', authorize({ policy: { target: 'customer', action: 'read' } }), handler)
+
+// PBAC + ReBAC（テナント配下で店舗作成：JWT tenantId と URL tenantId の一致）
+app.post(
+  '/:tenantId/shops',
+  authorize({
+    policy: { target: 'settings', action: 'createShop' },
+    relation: {
+      resolver: (c) =>
+        useResolver('tenant', { tenantId: TenantId(c.req.param('tenantId') ?? '') }),
+    },
+  }),
+  handler,
 )
 
-// PBAC + ReBAC（shop_owner / tenant_owner / tenant_staffが自店情報を閲覧）
-app.get('/shops/:shopId',
+// PBAC + ReBAC（テナント文脈で店舗削除：tenant・shop・JWT の整合）
+app.delete(
+  '/:tenantId/shops/:shopId',
   authorize({
-    policy:   { target: 'shop', action: 'read' },
+    policy: { target: 'settings', action: 'deleteShop' },
     relation: {
-      resourceTable: 'shop_assignment',
-      getId: (c) => ShopId(c.req.param('shopId')),
-    }
+      resolver: (c) =>
+        useResolver('shopInTenant', {
+          tenantId: TenantId(c.req.param('tenantId') ?? ''),
+          shopId: ShopId(c.req.param('shopId') ?? ''),
+        }),
+    },
   }),
-  handler
-)
-
-// PBAC + ReBAC（テナントオーナー・スタッフが加盟店舗を論理削除）
-app.delete('/tenants/:tenantId/shops/:shopId',
-  authorize({
-    policy:   { target: 'settings', action: 'deleteShop' },
-    relation: {
-      resourceTable: 'tenant_assignment',
-      anyOfRoles:    ['tenant_owner', 'tenant_staff'],
-      getId: (c) => TenantId(c.req.param('tenantId')),
-    }
-  }),
-  handler
+  handler,
 )
 ```
+
+---
+
+<a id="gate2-rebac-resolver-detail"></a>
+
+### Gate 2（ReBAC）の Resolver 詳細アーキテクチャ
+
+旧 `ADR-001-authorize-rebac.md` にあった内容を本文書へ統合した。**以下のコード抜粋は実行可能なソースと同一**（インポートパスだけ `@shared/permission/…` と記す）。
+
+#### ドメインとロールの前提
+
+```
+Tenant
+  └── Shop（shop_assignments で User と紐付く）
+        └── Customer（purchase_histories で店舗と紐付く）
+```
+
+| ロール | 権限イメージ |
+|---|---|
+| tenant_owner / tenant_staff / developer | テナント単位での管理 |
+| shop_owner / shop_staff | 担当店舗のみ |
+
+#### 抱えていた課題（Resolver 分割で緩和した点）
+
+`authorize()` 内でリソース種別ごとに DB を書き下ろすと改修コストが高い。また Resolver が Drizzle スキーマ直依存になると **`shared/` に置けない**。多段グラフが必要なときは関数に閉じ込め、`authorize` は **`(repo, auth) => boolean` の評価だけ** に留める。
+
+#### `AuthorizeOptions` と Hono の `Context`
+
+現行実装では `relation.resolver` は **`(c) => RelationResolver`**。URL の `tenantId` などはルート単位で取り込み、そのリクエスト専用の `RelationResolver` を返す。**`TenantId(c.req.param('tenantId') ?? '')`** のようなガードもここで行う。
+
+#### `resolver-types.ts`（`Repositories` と Gate 2 用 `RelationResolver`）
+
+```typescript
+import type { AuthContext } from '@shared/permission/types'
+
+export interface ShopAssignmentRepository {
+  findByUserIdAndShopId(
+    userId: string,
+    shopId: string,
+  ): Promise<{ userId: string; shopId: string } | null>
+}
+
+export interface ShopRepository {
+  findById(shopId: string): Promise<{ tenantId: string } | null>
+}
+
+export interface PurchaseHistoryRepository {
+  findByCustomerId(customerId: string): Promise<{ shopId: string } | null>
+}
+
+export type Repositories = {
+  shopAssignment: ShopAssignmentRepository
+  shop: ShopRepository
+  purchaseHistory: PurchaseHistoryRepository
+}
+
+export type RelationResolver = (repo: Repositories, auth: AuthContext) => Promise<boolean>
+```
+
+#### `resolvers.ts`（`resolveXViaY` 命名規則・多段チェック）
+
+```typescript
+import type { RelationResolver } from './resolver-types'
+import type { TenantId, ShopId } from '@shared/permission/types'
+import { isTenantAssignmentRole } from './types'
+
+export const resolveTenantAssignment =
+  (tenantId: TenantId): RelationResolver =>
+  async (_repo, auth) =>
+    auth.tenantId === tenantId
+
+export const resolveShopAssignment =
+  (shopId: ShopId): RelationResolver =>
+  async (repo, auth) => {
+    const row = await repo.shopAssignment.findByUserIdAndShopId(auth.userId, shopId)
+    return row !== null
+  }
+
+export const resolveShopViaTenant =
+  (shopId: ShopId): RelationResolver =>
+  async (repo, auth) => {
+    const shop = await repo.shop.findById(shopId)
+    if (!shop) return false
+    return shop.tenantId === auth.tenantId
+  }
+
+export const resolveCustomerViaShop =
+  (customerId: string): RelationResolver =>
+  async (repo, auth) => {
+    const history = await repo.purchaseHistory.findByCustomerId(customerId)
+    if (!history) return false
+    const shop = await repo.shop.findById(history.shopId)
+    if (!shop) return false
+
+    if (isTenantAssignmentRole(auth.role)) {
+      return shop.tenantId === auth.tenantId
+    }
+
+    const assignment = await repo.shopAssignment.findByUserIdAndShopId(auth.userId, history.shopId)
+    return assignment !== null
+  }
+
+/** URL の tenantId・JWT・shopId が一致し、店舗が当該テナントに属することを検証する（DELETE 店舗など）。 */
+export const resolveShopInTenantContext =
+  (tenantId: TenantId, shopId: ShopId): RelationResolver =>
+  async (repo, auth) => {
+    if (auth.tenantId !== tenantId) return false
+    const shop = await repo.shop.findById(shopId)
+    if (!shop) return false
+    return shop.tenantId === auth.tenantId
+  }
+```
+
+#### `resolver-map.ts`（`ResolverArgMap` と `useResolver`）
+
+キーと引数型を **`ResolverArgMap`** で一元管理する。実装には **`shopInTenant`**（`tenantId` + `shopId`）、**`customerViaShop`** は **`customerId` に `CustomerId` を使うブランド型**が含まれる。
+
+```typescript
+import type { RelationResolver } from './resolver-types'
+import type { TenantId, ShopId, CustomerId } from '@shared/permission/types'
+import {
+  resolveTenantAssignment,
+  resolveShopAssignment,
+  resolveShopViaTenant,
+  resolveCustomerViaShop,
+  resolveShopInTenantContext,
+} from './resolvers'
+
+type ResolverArgMap = {
+  tenant: { tenantId: TenantId }
+  shop: { shopId: ShopId }
+  shopViaTenant: { shopId: ShopId }
+  shopInTenant: { tenantId: TenantId; shopId: ShopId }
+  customerViaShop: { customerId: CustomerId }
+}
+
+const RESOLVER_MAP: {
+  [K in keyof ResolverArgMap]: (args: ResolverArgMap[K]) => RelationResolver
+} = {
+  tenant: ({ tenantId }) => resolveTenantAssignment(tenantId),
+  shop: ({ shopId }) => resolveShopAssignment(shopId),
+  shopViaTenant: ({ shopId }) => resolveShopViaTenant(shopId),
+  shopInTenant: ({ tenantId, shopId }) => resolveShopInTenantContext(tenantId, shopId),
+  customerViaShop: ({ customerId }) => resolveCustomerViaShop(customerId),
+}
+
+function callResolver<T extends keyof ResolverArgMap>(
+  map: { [K in keyof ResolverArgMap]: (args: ResolverArgMap[K]) => RelationResolver },
+  key: T,
+  args: ResolverArgMap[T],
+): RelationResolver {
+  return map[key](args)
+}
+
+export function useResolver<T extends keyof ResolverArgMap>(
+  key: T,
+  args: ResolverArgMap[T],
+): RelationResolver {
+  return callResolver(RESOLVER_MAP, key, args)
+}
+```
+
+#### Worker の DI と `Repositories`
+
+Gate 2 用の具象は **`worker/middleware/di.ts`** で `c.set('repo', { … })` により注入する。一覧スコープ用の **`CustomerRepository`**／**`ShopAccessRepository`**／**useCase** も同じミドルウェアで組むが、Resolver が直接触れるのは **`c.get('repo')`**（上記インターフェース準拠）に限定される。
+
+```typescript
+c.set('repo', {
+  shopAssignment: new ShopAssignmentRepository(db),
+  shop: shopRepo,
+  purchaseHistory: purchaseHistoryRepo,
+})
+```
+
+（実ファイルでは `customerRepo` 生成のために他リポジトリも参照するが、その責務は Gate 2 外である。）
+
+#### 採用理由と却下案
+
+**採用：Resolver 関数アプローチ**
+
+- 型が追える。不必要な **`unknown`** キャストを避ける
+- ユースケースごとに個別定義し、強い共通化でロジックを膨らませない
+- `authorize()` 本体は Resolver を評価するだけで traversing を知らない
+- 多段の複雑さは Resolver 関数内に閉じる
+
+**却下：Chain アプローチ**
+
+- 中間行が **`unknown`** になりやすくキャストばかりになる
+- 「汎用 chain」へ押し込むとユースケース固有の前提が混入し複雑化する
+
+**却下：`require` オプション（ReBAC でロール列挙）**
+
+- role 可否は Gate 1（PBAC）の **`policy.action`** に集約する
+- Resolver と **`require`** がほぼ 1:1 になるまでドメインが単純なら冗長
+- 持ち込むと PBAC と ReBAC の線引きが曖昧になる
+
+#### Gate 2 まわりの設計判断一覧
+
+| 判断 | 結論 |
+|---|---|
+| Gate1 / Gate2 の責務 | PBAC（インメモリ）と ReBAC（repo）を混ぜない |
+| `relation.resolver` | **`(c) => RelationResolver`**。URL はルート側で読む |
+| `require` | 不要。ロール評価は **`policy`** |
+| Resolver の戻り値 | `boolean`。Relationship オブジェクトは外に出さない |
+| DB への依存 | `resolvers.ts` は **`Repositories` IF のみ**。Drizzle 非依存 |
+| repo の組み立て | DI ミドルウェアに集約。**`authorize.ts` は中身を知らない** |
+| Resolver の登録 | **`useResolver(key, args)`** でキーと引数を型連動 |
+| 引数の形 | オブジェクト。将来の引数増に強い |
+| `as` 回避 | **`callResolver`** で `key` と `args` を同一ジェネリクス **`T`** に束縛 |
+| 403 / 404 | ReBAC で否認なら **404**（存在秘匿）（§12 も参照） |
 
 ---
 
@@ -688,7 +862,7 @@ class TenantOwnerCustomerPolicy extends CustomerPolicyBase {
     const limits: Record<Plan, number> = {
       [PLAN.STARTER]: 0,
       [PLAN.BASIC]:   100,
-      [PLAN.PRO]:     EXPORT_LIMIT_UNLIMITED,
+      [PLAN.PRO]:     SHOP_LIMIT_UNLIMITED,
     }
     return limits[this.context.plan]
   }
@@ -718,7 +892,7 @@ class ShopOwnerCustomerPolicy extends CustomerPolicyBase {
     const limits: Record<Plan, number> = {
       [PLAN.STARTER]: 0,
       [PLAN.BASIC]:   100,
-      [PLAN.PRO]:     EXPORT_LIMIT_UNLIMITED,
+      [PLAN.PRO]:     SHOP_LIMIT_UNLIMITED,
     }
     return limits[this.context.plan]
   }
@@ -841,7 +1015,7 @@ async exportCsv() {
   const currentMonthCount = await this.customerRepo.countExportsThisMonth()
   if (currentMonthCount >= exportCsvLimit) {
     throw new ExportQuotaExceededException(
-      `このプランのエクスポート上限（月${exportCsvLimit === EXPORT_LIMIT_UNLIMITED ? '無制限' : `${exportCsvLimit}件`}）に達しています`
+      `このプランのエクスポート上限（月${exportCsvLimit === SHOP_LIMIT_UNLIMITED ? '無制限' : `${exportCsvLimit}件`}）に達しています`
     )
   }
 
@@ -935,7 +1109,7 @@ export function usePermission() {
   const isCreateShopLimitUnlimited = createShopLimit === SHOP_LIMIT_UNLIMITED
 
   const exportCsvLimit = permissions?.customer.exportCsvLimit
-  const isExportCsvLimitUnlimited = exportCsvLimit === EXPORT_LIMIT_UNLIMITED
+  const isExportCsvLimitUnlimited = exportCsvLimit === SHOP_LIMIT_UNLIMITED
 
   return { hasPermission, createShopLimit, isCreateShopLimitUnlimited, exportCsvLimit, isExportCsvLimitUnlimited }
 }
@@ -987,8 +1161,8 @@ const { createShopLimit, isCreateShopLimitUnlimited, exportCsvLimit, isExportCsv
 shared/
 └── permission/
     ├── types.ts              # Role, Plan, PLAN 定数, AuthContext（tenantId 含む）, PolicyContext
-    │                         # BrandType: TenantId, ShopId + コンストラクタ関数
-    │                         # SHOP_LIMIT_UNLIMITED, EXPORT_LIMIT_UNLIMITED
+    │                         # BrandType: TenantId, ShopId, CustomerId + コンストラクタ関数
+    │                         # SHOP_LIMIT_UNLIMITED
     │
     ├── permissions.ts        # PermissionsMap, Action
     │                         # hasPermissionInMap(), buildPermissionDeniedMessage()
@@ -1011,13 +1185,14 @@ shared/
     │           └── system.ts
     │
     └── scope/
-        ├── types.ts          # RelationMap, ResourceMap, ResourceIdMap
+        ├── types.ts          # TENANT_ASSIGNMENT_ROLES / isTenantAssignmentRole
+        │                     # RelationMap, ResourceMap, ResourceIdMap, Relation
         │                     # TenantAssignmentResource, ShopAssignmentResource
-        │                     # Relation, RelationResolver
         │                     # ※ BrandType は ../types.ts から import
         │
-        ├── registry.ts       # registry（純粋関数のみ・DBアクセスなし）
-        │                     # ※ resolveRelation / resolveUserRelation は Worker 層
+        ├── resolver-types.ts # Repositories IF, RelationResolver（Gate 2）
+        ├── resolvers.ts      # resolveTenantAssignment, resolveShopAssignment 等
+        ├── resolver-map.ts   # useResolver(key, args)
         │
         └── customer/
             ├── scope.ts      # CustomerScope interface
@@ -1029,20 +1204,20 @@ worker/                       # Cloudflare Workers × Hono
 ├── middleware/
 │   ├── auth.ts               # JWTデコード + SubscriptionRepository 経由で plan を取得 → AuthContext に注入
 │   ├── authorize.ts          # authorize MW 本体（Gate 1: PBAC / Gate 2: ReBAC）
-│   │                         # AuthorizeOptions, PolicyOption, ReBACOption
-│   │                         # resolveUserRelation()（DB アクセスが必要なため Worker 層に配置）
-│   └── di.ts                 # DIミドルウェア（CustomerRepository / UseCase を c.set('useCase', ...) で注入）
+│   │                         # AuthorizeOptions, PolicyOption, relation.resolver
+│   └── di.ts                 # c.set('repo', …) と CustomerRepository / UseCase を注入
 │
 ├── repository/
 │   ├── customer.repository.ts      # TenantCustomerScope, ShopCustomerScope, scopeMap
 │   │                               # CustomerRepository（resolveScope, findAll, findById, update, delete）
+│   ├── user-relation.repository.ts # 一覧スコープ用：admin_users / shop_assignments から Relation を解決
 │   └── subscription.repository.ts  # SubscriptionRepository（findValidByTenantId）
 │
 ├── usecase/
 │   ├── customer.usecase.ts   # CustomerUseCase（listCustomers, updateCustomer, deleteCustomer, exportCsv）
 │   └── shop.usecase.ts       # ShopUseCase（listShops, createShop, deleteShop）
 │
-├── type.ts                   # HonoEnv, Variables（auth / db / useCase）, UseCases 型
+├── type.ts                   # HonoEnv, Variables（auth / db / repo / useCase）
 │
 └── routes/
     ├── auth.ts               # ログイン・/me ルート
@@ -1071,7 +1246,9 @@ src/（React）
 
 worker/（Hono / Cloudflare Workers）
   └── import ← shared/permission/scope/types.ts
-                shared/permission/scope/registry.ts   （純粋関数のみ）
+                shared/permission/scope/resolver-types.ts
+                shared/permission/scope/resolvers.ts
+                shared/permission/scope/resolver-map.ts
                 shared/permission/policy/context.ts
                 shared/permission/types.ts
 
@@ -1079,7 +1256,7 @@ shared/permission/scope/types.ts
   └── import ← shared/permission/types.ts（BrandType）
 
 shared/ には DB アクセスを含むコードを置かない。
-DB アクセス・resolveUserRelation・TenantCustomerScope 等は worker/ に配置する。
+`RelationResolver` 内の DB 呼び出しは `Repositories` インターフェース越しに Worker 実装を注入する。`UserRelationRepository`・`TenantCustomerScope` 等の実体は worker/ に配置する。
 ```
 
 ---
@@ -1105,16 +1282,14 @@ PermissionsMap / POLICY_MAP
   └─→ buildPermissionsMap()   ログイン時に計算・JWTに載せる
        └─→ XxxPermissions & XxxPlanFeatures がフラットにフロントへ届く
 
-RelationMap                   [shared/permission/scope/types.ts]
-  ├─→ ReBACOption<K>          resourceTableとanyOfRolesを連動
-  ├─→ AuthorizeOptions<K>     optionsに組み込む
-  ├─→ authorize<K>()          MW関数で型推論        [worker/middleware/authorize.ts]
-  └─→ registry                実装漏れをコンパイル時に検知  [shared/permission/scope/registry.ts]
+RelationMap / ResourceIdMap（BrandType）  [shared/permission/scope/types.ts, types.ts]
+  ├─→ TenantId / ShopId / CustomerId      IDの種別を型レベルで区別
+  └─→ useResolver の引数・スコープマップの型に利用
 
-ResourceIdMap（BrandType）     [shared/permission/types.ts]
-  ├─→ TenantId / ShopId       IDの種別を型レベルで区別
-  ├─→ ReBACOption<K>.getId    resourceTableに対応するID型のみ返せる
-  └─→ resolveRelation         resourceIdの型を保証
+RelationResolver              [shared/permission/scope/resolver-types.ts]
+  ├─→ (repo, auth) => Promise<boolean>    Gate 2 のみが評価
+  ├─→ useResolver(key, args)              [resolver-map.ts] ルートから組み立て
+  └─→ resolvers.ts                        具体判定（DB は repo 経由）
 
 Relation（RelationMapの値の型）
   └─→ scopeMap               relationとScopeの対応を宣言的に定義
@@ -1149,9 +1324,9 @@ exportCsv の多層チェック（B案パターン）
 6. PermissionsMapにリソースを追加      → フロントの型が効く
 
 【ReBAC側】
-7. RelationMapに型を追加              → authorizeの引数に型が効く  [scope/types.ts]
-8. ResourceMapに型を追加              → registryのfetchに型が効く  [scope/types.ts]
-9. registryに実装を追加               → 追加漏れはコンパイルエラーで検知  [scope/registry.ts]
+7. `resolver-types.ts` の `Repositories` に必要なメソッドを追加（Worker の repo 実装と整合）
+8. `resolvers.ts` に `RelationResolver` を追加、`resolver-map.ts` の `ResolverArgMap` / `RESOLVER_MAP` にキーを追加
+9. ルートで `authorize({ relation: { resolver: (c) => useResolver(...)}})` を記述
 
 【数量制限を伴うリソース（XxxPlanFeatures に追加）】
 10. XxxPlanFeatures に xLimit: number を追加
@@ -1165,7 +1340,7 @@ exportCsv の多層チェック（B案パターン）
 16. PermissionsMap に反映されるためフロントの <Permission> もそのまま使える
 ```
 
-ミドルウェア本体（`authorize`）は一切変更不要。
+新しい **PBAC の action** を追加する場合は `authorize` の型は `PolicyOption` 経由で追従する。新しい **ReBAC パターン** を追加する場合は `resolvers` / `resolver-map` の変更が必要になる。
 
 ---
 
@@ -1190,10 +1365,10 @@ B案により、plan で不可のケース（例：starter の exportCsv）も G
 - plan 依存の可否は action 名に織り込む（B案）ことで、authorize 本体の変更なしに plan 条件を追加でき、`<Permission>` もそのまま使える
 - `XxxPermissions`（role 起因）と `XxxPlanFeatures`（plan 起因）を型レベルで分離し、Policy クラスの `rolePermissions()` / `planFeatures()` で実装を明確に分ける
 - plan 文字列は `PLAN.STARTER` 等の定数で参照し、リテラル散在を防ぐ
-- `createShopLimit` / `exportCsvLimit` は `SHOP_LIMIT_UNLIMITED` / `EXPORT_LIMIT_UNLIMITED` で統一し、null チェック不要でシンプルな比較処理を保つ
+- `createShopLimit` / `exportCsvLimit` は「無制限」を **`SHOP_LIMIT_UNLIMITED`（Number.MAX_SAFE_INTEGER）** と同義に扱い、null チェック不要で比較を書ける（サンプルの PBAC コードはこの前提で記載）
 - 数量チェックは「上限値の宣言（PBAC）」と「現在値との比較（UseCase）」に分離し、ReBACの責務と明確に区別する
 - `PermissionsMap`をフロント・バックエンドで共有し、`<Permission target action>`でUI表示制御を統一できる
-- `RelationMap`と`ResourceMap`を追加するだけで新リソースに対応でき、実装漏れはコンパイル時に検知される
+- Gate 2 は `useResolver`＋`Repositories` IF で拡張し、authorize 本体を増やさずに新しい関係チェックを足せる
 - ReBACとPBACが独立しているため、どちらの層で問題が起きたか特定できる
 - 404返却によりリソースの存在自体を秘匿できる
 - `apps/` → `shared/` の一方向依存を守ることで、worker・フロントの両方から安全に共有型を参照できる
@@ -1231,28 +1406,25 @@ shop_assignments: (user_id, shop_id)   ← 所属関係のみ。role は不要
 ログイン時に `tenantId` を JWT に埋め込み、auth middleware で `AuthContext.tenantId` として保持する。
 これにより `POST /api/tenants/:tenantId/shops` 等のテナント所属チェックは、**JWT の `tenantId` と URL の `tenantId` を比較するだけ**でよく、DB アクセスは不要になる。
 
-```ts
-// authorize.ts — tenant_assignment チェック（DB アクセスなし）
-if (auth.tenantId === tenantId) {
-  relation = registry.tenant_assignment(auth.userId, { role: auth.role })
-}
-```
+`resolveTenantAssignment(tenantId)`（`resolvers.ts`）は `auth.tenantId === tenantId` のみで評価し、DB アクセスをしない。
 
-Gate 2（ReBAC）の `tenant_assignment` チェックが Gate 1（PBAC）と同様にインメモリで完結する。
+Gate 2（ReBAC）のテナント所属チェックが Gate 1（PBAC）と同様にインメモリで完結する。
 
 ---
 
-### C. `registry` と `CustomerScope` の実装は Worker 層に配置
+### C. `RelationResolver` の Worker 実装と `CustomerScope` は Worker 層に配置
 
-`shared/` は `worker/` を import しない一方向依存の原則（§9）があるため、DB アクセスを伴うコードは `shared/` に置けない。
+`shared/` は `worker/` を import しない一方向依存の原則（§9）があるため、Drizzle を直接叩くコードは `shared/` に置けない。Gate 2 は **`Repositories` の実装**が Worker にあり、`authorize` が `c.get('repo')` を Resolver に渡す。
 
 | モジュール | 配置 | 理由 |
 |---|---|---|
-| `registry`（純粋関数・Relation 判定） | `shared/permission/scope/registry.ts` | DB 不要 |
-| DB クエリ → registry 呼び出し / `resolveUserRelation` | `worker/middleware/authorize.ts` | Worker 専有の DB を使用 |
+| `Repositories` IF・`RelationResolver` 型 | `shared/permission/scope/resolver-types.ts` | Drizzle 非依存の契約のみ |
+| `resolveShopAssignment` 等（repo を呼ぶ関数） | `shared/permission/scope/resolvers.ts` | IF 越し。実装は Worker の repo が注入される |
+| repo の具象（`shopAssignment.findByUserIdAndShopId` 等） | `worker/repository/*.ts` | D1 / Drizzle に依存 |
 | `CustomerScope` interface / `BaseCustomerScope` | `shared/permission/scope/customer/scope.ts` | DB 不要 |
 | `CustomerScopeFactory` 型 / `ScopeMap` 型 | `shared/permission/scope/customer/scope-map.ts` | 型定義のみ・DB 不要 |
-| `TenantCustomerScope` / `ShopCustomerScope` / `scopeMap` 実装 | `worker/repository/customer.repository.ts` | Drizzle DB インスタンスが必要 |
+| `TenantCustomerScope` / `ShopCustomerScope` / `scopeMap` 実装 | `worker/repository/customer.repository.ts` 等 | Drizzle DB インスタンスが必要 |
+| `UserRelationRepository` | `worker/repository/user-relation.repository.ts` | 一覧スコープ用の DB アクセス |
 
 ---
 
