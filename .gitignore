@@ -3,6 +3,8 @@ node_modules
 
 # Wrangler
 .wrangler
+# `npm run cf-typegen` で再生成（wrangler.jsonc から一意に決まる）
+worker-configuration.d.ts
 
 # Vite
 dist
