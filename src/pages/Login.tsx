@@ -182,43 +182,87 @@ export function LoginPage() {
 
         {/* 権限マトリクス早見表 */}
         <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">権限マトリクス早見表</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-center border-collapse">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-3 py-2 text-left text-gray-600 font-medium border border-gray-200">ロール × プラン</th>
-                  <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客閲覧</th>
-                  <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客作成</th>
-                  <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客削除</th>
-                  <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">CSV出力</th>
-                  <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗作成</th>
-                  <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗削除</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { label: 'tenant_owner / pro', row: ['✅', '✅', '✅', '✅(無制限)', '✅(無制限)', '✅'] },
-                  { label: 'tenant_owner / basic', row: ['✅', '✅', '✅', '✅(月100件)', '✅(30店)', '✅'] },
-                  { label: 'tenant_owner / starter', row: ['✅', '✅', '✅', '❌', '✅(5店)', '✅'] },
-                  { label: 'tenant_staff / pro', row: ['✅', '✅', '✅', '✅(無制限)', '✅(無制限)', '✅'] },
-                  { label: 'tenant_staff / starter', row: ['✅', '✅', '✅', '❌', '✅(5店)', '✅'] },
-                  { label: 'shop_owner / pro', row: ['✅(自店のみ)', '❌', '❌', '✅(無制限)', '❌', '❌'] },
-                  { label: 'shop_owner / basic', row: ['✅(自店のみ)', '❌', '❌', '✅(月100件)', '❌', '❌'] },
-                  { label: 'shop_owner / starter', row: ['✅(自店のみ)', '❌', '❌', '❌', '❌', '❌'] },
-                  { label: 'shop_staff / *', row: ['❌', '❌', '❌', '❌', '❌', '❌'] },
-                ].map(({ label, row }) => (
-                  <tr key={label} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-3 py-2 text-left font-medium text-gray-700 border border-gray-200 whitespace-nowrap">{label}</td>
-                    {row.map((cell, i) => (
-                      <td key={i} className={`px-3 py-2 border border-gray-200 ${cell.startsWith('❌') ? 'text-red-500' : 'text-emerald-600'}`}>
-                        {cell}
-                      </td>
-                    ))}
+          <h2 className="text-lg font-semibold text-gray-800 mb-5">権限マトリクス早見表</h2>
+
+          {/* ロールによる操作権限 */}
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold mb-3 bg-indigo-50 text-indigo-600 border-indigo-200">
+              <span>👤</span> ロールによる操作権限
+            </div>
+            <p className="text-xs text-gray-400 mb-2">プランに関わらず、ロールで固定される true/false</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-center border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-3 py-2 text-left text-gray-600 font-medium border border-gray-200">ロール</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客閲覧</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客作成</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客更新</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">顧客削除</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗作成</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗更新</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗削除</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗閲覧</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {[
+                    { label: 'tenant_owner / tenant_staff', row: ['✅', '✅', '✅', '✅', '✅', '✅', '✅', '✅'] },
+                    { label: 'shop_owner', row: ['✅(自店のみ)', '❌', '✅', '❌', '❌', '❌', '❌', '✅'] },
+                    { label: 'shop_staff', row: ['❌', '❌', '❌', '❌', '❌', '❌', '❌', '✅'] },
+                  ].map(({ label, row }) => (
+                    <tr key={label} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2 text-left font-medium text-gray-700 border border-gray-200 whitespace-nowrap">{label}</td>
+                      {row.map((cell, i) => (
+                        <td key={i} className={`px-3 py-2 border border-gray-200 ${cell.startsWith('❌') ? 'text-red-500' : 'text-emerald-600'}`}>
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">※ 店舗閲覧は全ロール共通で ✅（表示範囲はスコープで制御）</p>
+          </div>
+
+          {/* プランによる数量・機能 */}
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold mb-3 bg-purple-50 text-purple-600 border-purple-200">
+              <span>📋</span> プランによる数量・機能
+            </div>
+            <p className="text-xs text-gray-400 mb-2">ロールが同じでも、プランによって変わる上限・可否</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-center border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-3 py-2 text-left text-gray-600 font-medium border border-gray-200">プラン</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">CSV出力</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">CSV件数上限</th>
+                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗作成上限</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { label: 'pro',     row: ['✅', '無制限',  '無制限'] },
+                    { label: 'basic',   row: ['✅', '月100件', '30店'] },
+                    { label: 'starter', row: ['❌', '—',       '5店'] },
+                  ].map(({ label, row }) => (
+                    <tr key={label} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2 text-left font-medium text-gray-700 border border-gray-200">
+                        <span className={`px-2 py-0.5 rounded-full font-semibold ${planColorMap[label]}`}>{label}</span>
+                      </td>
+                      {row.map((cell, i) => (
+                        <td key={i} className={`px-3 py-2 border border-gray-200 ${cell.startsWith('❌') ? 'text-red-500' : 'text-emerald-600'}`}>
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">※ shop_staff は CSV 出力不可（プラン以前にロールで制限）。店舗作成上限は tenant_owner のみ対象</p>
           </div>
         </div>
       </div>
