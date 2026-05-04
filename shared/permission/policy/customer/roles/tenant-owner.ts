@@ -1,4 +1,4 @@
-import { PLAN, EXPORT_LIMIT_UNLIMITED } from '../../../types'
+import { PLAN } from '../../../types'
 import { CustomerPolicyBase } from '../base'
 import type { CustomerPermissions, CustomerPlanFeatures } from '../types'
 
@@ -15,16 +15,6 @@ export class TenantOwnerCustomerPolicy extends CustomerPolicyBase {
   private planFeatures(): CustomerPlanFeatures {
     return {
       exportCsv: this.context.plan !== PLAN.STARTER,
-      exportCsvLimit: this.resolveExportCsvLimit(),
     }
-  }
-
-  private resolveExportCsvLimit(): number {
-    const limits: Record<string, number> = {
-      [PLAN.STARTER]: 0,
-      [PLAN.BASIC]: 100,
-      [PLAN.PRO]: EXPORT_LIMIT_UNLIMITED,
-    }
-    return limits[this.context.plan] ?? 0
   }
 }

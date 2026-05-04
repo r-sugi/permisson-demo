@@ -8,27 +8,24 @@ function makeCtx(role: string, plan: string): PolicyContext {
 
 describe('POLICY_MAP - customer', () => {
   describe('tenant_owner', () => {
-    it('pro: 全操作可 + CSV無制限', () => {
+    it('pro: 全操作可 + CSV可', () => {
       const perms = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
       expect(perms.create).toBe(true)
       expect(perms.read).toBe(true)
       expect(perms.update).toBe(true)
       expect(perms.delete).toBe(true)
       expect(perms.exportCsv).toBe(true)
-      expect(perms.exportCsvLimit).toBe(Number.MAX_SAFE_INTEGER)
     })
 
-    it('basic: 全操作可 + CSV月100件', () => {
+    it('basic: 全操作可 + CSV可', () => {
       const perms = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'basic')).listPermissions()
       expect(perms.exportCsv).toBe(true)
-      expect(perms.exportCsvLimit).toBe(100)
     })
 
     it('starter: 全操作可 + CSV不可', () => {
       const perms = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'starter')).listPermissions()
       expect(perms.create).toBe(true)
       expect(perms.exportCsv).toBe(false)
-      expect(perms.exportCsvLimit).toBe(0)
     })
   })
 
@@ -51,10 +48,9 @@ describe('POLICY_MAP - customer', () => {
       expect(perms.exportCsv).toBe(true)
     })
 
-    it('basic: CSV月100件', () => {
+    it('basic: CSV可', () => {
       const perms = POLICY_MAP.customer.shop_owner(makeCtx('shop_owner', 'basic')).listPermissions()
       expect(perms.exportCsv).toBe(true)
-      expect(perms.exportCsvLimit).toBe(100)
     })
 
     it('starter: CSV不可', () => {

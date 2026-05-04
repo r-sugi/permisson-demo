@@ -4,12 +4,11 @@ import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
 import type { AuthContext, PolicyContext } from 'shared/permission/types'
 import type { RelationResolver } from 'shared/permission/scope/resolver-types'
-import { POLICY_MAP, type PolicyTarget, buildPermissionDeniedMessage } from 'shared/permission/policy/context'
-
-type PolicyOption = {
-  target: PolicyTarget
-  action: string
-}
+import {
+  POLICY_MAP,
+  type PolicyOption,
+  buildPermissionDeniedMessage,
+} from 'shared/permission/policy/context'
 
 type AuthorizeOptions = {
   policy?: PolicyOption

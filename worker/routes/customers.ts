@@ -1,10 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
-import { ulid } from "ulidx"
 import type { HonoEnv } from '../type'
-import { schema } from '../rdb/index'
 import { authorize } from '../middleware/authorize'
 
 export const customerRoutes = new Hono<HonoEnv>()
@@ -34,16 +31,8 @@ export const customerRoutes = new Hono<HonoEnv>()
       }),
     ),
     async (c) => {
-      const { name, email, shopId, tag, memo } = c.req.valid('json')
-      const db = c.get('db')
-      const customerId = ulid()
-      await db.insert(schema.customers).values({ id: customerId, name, email, tag, memo }).run()
-      await db.insert(schema.purchaseHistories).values({ id: ulid(), customerId, shopId }).run()
-      const customer = await db
-        .select()
-        .from(schema.customers)
-        .where(eq(schema.customers.id, customerId))
-        .get()
+      const body = c.req.valid('json')
+      const customer = await c.get('usecases').customers.createCustomer(body)
       return c.json(customer, 201)
     },
   )

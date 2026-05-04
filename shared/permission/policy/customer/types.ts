@@ -7,5 +7,4 @@ export type CustomerPermissions = {
 
 export type CustomerPlanFeatures = {
   exportCsv: boolean
-  exportCsvLimit: number
 }

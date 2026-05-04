@@ -36,7 +36,6 @@ export const TenantId = (id: string): TenantId => id as TenantId
 export const ShopId = (id: string): ShopId => id as ShopId
 
 // ================================
-// 数量制限：無制限を表す定数
+// 数量制限：無制限を表す定数（店舗作成上限など）
 // ================================
 export const SHOP_LIMIT_UNLIMITED = Number.MAX_SAFE_INTEGER
-export const EXPORT_LIMIT_UNLIMITED = Number.MAX_SAFE_INTEGER

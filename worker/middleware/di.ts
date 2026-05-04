@@ -16,17 +16,19 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
   const shopRepo = new ShopRepository(db)
   const userRelations = new UserRelationRepository(db)
 
+  const purchaseHistoryRepo = new PurchaseHistoryRepository(db)
+
   c.set('repos', {
     shopAssignment: new ShopAssignmentRepository(db),
     shop: shopRepo,
-    purchaseHistory: new PurchaseHistoryRepository(db),
+    purchaseHistory: purchaseHistoryRepo,
   })
 
   const customerRepo = CustomerRepository.create(auth.userId, db, userRelations)
   const shopAccessRepo = ShopAccessRepository.create(auth.userId, shopRepo, userRelations)
 
   c.set('usecases', {
-    customers: new CustomerUseCase(customerRepo, auth),
+    customers: new CustomerUseCase(customerRepo, purchaseHistoryRepo, db),
     shops: new ShopUseCase(shopRepo, shopAccessRepo, auth),
   })
 

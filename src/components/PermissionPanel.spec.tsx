@@ -4,7 +4,7 @@ import { PermissionPanel } from './PermissionPanel'
 import { usePermissionContext } from '@/providers/permission/permissionContext'
 import { usePermission } from '@/providers/permission/usePermission'
 import type { MeData } from '@/providers/permission/permissionContext'
-import { EXPORT_LIMIT_UNLIMITED, SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
 
 vi.mock('@/providers/permission/permissionContext')
 vi.mock('@/providers/permission/usePermission')
@@ -20,7 +20,7 @@ const tenantOwnerProMe: MeData = {
   tenantName: 'A社',
   shopScope: '全て',
   permissions: {
-    customer: { create: true, read: true, update: true, delete: true, exportCsv: true, exportCsvLimit: EXPORT_LIMIT_UNLIMITED },
+    customer: { create: true, read: true, update: true, delete: true, exportCsv: true },
     settings: { createShop: true, updateShop: true, deleteShop: true, createShopLimit: SHOP_LIMIT_UNLIMITED },
     shop: { read: true },
   },
@@ -34,7 +34,7 @@ const shopStaffMe: MeData = {
   tenantName: 'A社',
   shopScope: 'A社 渋谷店',
   permissions: {
-    customer: { create: false, read: false, update: false, delete: false, exportCsv: false, exportCsvLimit: 0 },
+    customer: { create: false, read: false, update: false, delete: false, exportCsv: false },
     settings: { createShop: false, updateShop: false, deleteShop: false, createShopLimit: 0 },
     shop: { read: true },
   },
@@ -61,8 +61,6 @@ describe('PermissionPanel', () => {
       },
       createShopLimit: SHOP_LIMIT_UNLIMITED,
       isCreateShopLimitUnlimited: true,
-      exportCsvLimit: EXPORT_LIMIT_UNLIMITED,
-      isExportCsvLimitUnlimited: true,
     })
 
     render(<PermissionPanel items={ITEMS} />)
@@ -87,8 +85,6 @@ describe('PermissionPanel', () => {
       hasPermission: (_target, _action) => false,
       createShopLimit: 0,
       isCreateShopLimitUnlimited: false,
-      exportCsvLimit: 0,
-      isExportCsvLimitUnlimited: false,
     })
 
     render(<PermissionPanel items={ITEMS} />)
@@ -110,8 +106,6 @@ describe('PermissionPanel', () => {
       hasPermission: () => false,
       createShopLimit: 0,
       isCreateShopLimitUnlimited: false,
-      exportCsvLimit: 0,
-      isExportCsvLimitUnlimited: false,
     })
 
     const { container } = render(<PermissionPanel items={ITEMS} />)

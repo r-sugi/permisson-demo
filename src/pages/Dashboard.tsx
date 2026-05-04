@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { usePermissionContext } from '@/providers/permission/permissionContext'
-import { SHOP_LIMIT_UNLIMITED, EXPORT_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
 
 type PermissionRow = {
   category: string
@@ -32,9 +32,7 @@ export function DashboardPage() {
     {
       category: '顧客管理', action: 'exportCsv', label: 'CSV出力',
       granted: p.customer.exportCsv,
-      note: p.customer.exportCsv
-        ? p.customer.exportCsvLimit === EXPORT_LIMIT_UNLIMITED ? '無制限' : `月${p.customer.exportCsvLimit}件`
-        : undefined,
+      note: p.customer.exportCsv ? '利用可' : undefined,
       dependency: 'plan',
     },
     {

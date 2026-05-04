@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
-import type { DrizzleDb } from '../services/database.service'
+import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { schema } from '../rdb/index'
 import type { Relation } from 'shared/permission/scope/types'
 import type { CustomerScope } from 'shared/permission/scope/customer/scope'
@@ -79,6 +79,7 @@ export class CustomerRepository {
     return new CustomerRepository(userId, db, userRelations)
   }
 
+  // scope 解決
   private async resolveScope(): Promise<CustomerScope> {
     if (!this.scopeCache) {
       const { relation, resourceId } = await this.userRelations.resolveForUser(this.userId)
@@ -114,6 +115,22 @@ export class CustomerRepository {
   async validateIds(customerIds: string[]): Promise<string[]> {
     const scope = await this.resolveScope()
     return scope.validateIds(customerIds)
+  }
+
+  async insert(
+    executor: DrizzleExecutor,
+    values: { id: string; name: string; email: string; tag?: string; memo?: string },
+  ): Promise<void> {
+    await executor.insert(schema.customers).values(values).run()
+  }
+
+  /** 作成直後の応答など、スコープ解決なしで1件取得する */
+  async findRowById(customerId: string) {
+    return this.db
+      .select()
+      .from(schema.customers)
+      .where(eq(schema.customers.id, customerId))
+      .get()
   }
 
   async update(customerId: string, data: { name?: string; tag?: string | null; memo?: string | null }) {

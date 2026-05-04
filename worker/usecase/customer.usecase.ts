@@ -1,13 +1,14 @@
 import { HTTPException } from 'hono/http-exception'
-import type { AuthContext } from 'shared/permission/types'
-import { POLICY_MAP } from 'shared/permission/policy/context'
-import { EXPORT_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { ulid } from 'ulidx'
 import type { CustomerRepository } from '../repository/customer.repository'
+import type { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
+import type { DrizzleDb } from '../services/database.service'
 
 export class CustomerUseCase {
   constructor(
     private readonly customerRepo: CustomerRepository,
-    private readonly auth: AuthContext,
+    private readonly purchaseHistoryRepo: PurchaseHistoryRepository,
+    private readonly db: DrizzleDb,
   ) {}
 
   async listCustomers() {
@@ -26,21 +27,37 @@ export class CustomerUseCase {
     return this.customerRepo.delete(customerId)
   }
 
-  async exportCsv() {
-    const { exportCsvLimit } = POLICY_MAP.customer[this.auth.role]({
-      role: this.auth.role,
-      plan: this.auth.plan,
-      shop_ids: [],
-    }).listPermissions()
-
-    // サンプルとして月次カウントは常に0（実際は月次エクスポート数を集計）
-    const currentMonthCount = 0
-    if (currentMonthCount >= exportCsvLimit) {
-      throw new HTTPException(422, {
-        message: `エクスポート上限（月${exportCsvLimit === EXPORT_LIMIT_UNLIMITED ? '無制限' : `${exportCsvLimit}件`}）に達しています`,
+  async createCustomer(data: {
+    name: string
+    email: string
+    shopId: string
+    tag?: string
+    memo?: string
+  }) {
+    const customerId = ulid()
+    await this.db.transaction(async (tx) => {
+      await this.customerRepo.insert(tx, {
+        id: customerId,
+        name: data.name,
+        email: data.email,
+        tag: data.tag,
+        memo: data.memo,
       })
-    }
+      await this.purchaseHistoryRepo.insert(tx, {
+        id: ulid(),
+        customerId,
+        shopId: data.shopId,
+      })
+    })
 
+    const customer = await this.customerRepo.findRowById(customerId)
+    if (!customer) {
+      throw new HTTPException(500, { message: 'Customer creation failed' })
+    }
+    return customer
+  }
+
+  async exportCsv() {
     return this.customerRepo.exportAll()
   }
 }

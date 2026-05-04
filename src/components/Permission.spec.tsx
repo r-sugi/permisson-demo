@@ -13,8 +13,6 @@ function makeUsePermissionReturn(hasPermission: boolean) {
     hasPermission: vi.fn().mockReturnValue(hasPermission),
     createShopLimit: 0,
     isCreateShopLimitUnlimited: false,
-    exportCsvLimit: 0,
-    isExportCsvLimitUnlimited: false,
   }
 }
 

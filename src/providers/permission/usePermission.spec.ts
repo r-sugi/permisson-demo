@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react'
 import { usePermission } from './usePermission'
 import { usePermissionContext } from './permissionContext'
 import type { MeData } from './permissionContext'
-import { EXPORT_LIMIT_UNLIMITED, SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
 
 vi.mock('./permissionContext')
 
@@ -24,7 +24,6 @@ function makeMe(partial: Partial<MeData>): MeData {
         update: true,
         delete: true,
         exportCsv: true,
-        exportCsvLimit: EXPORT_LIMIT_UNLIMITED,
       },
       settings: {
         createShop: true,
@@ -58,7 +57,6 @@ describe('usePermission', () => {
     expect(result.current.hasPermission('customer', 'create')).toBe(true)
     expect(result.current.hasPermission('customer', 'delete')).toBe(true)
     expect(result.current.hasPermission('customer', 'exportCsv')).toBe(true)
-    expect(result.current.isExportCsvLimitUnlimited).toBe(true)
   })
 
   it('shop_staff: customer.read = false', () => {
@@ -67,7 +65,7 @@ describe('usePermission', () => {
         role: 'shop_staff',
         plan: 'pro',
         permissions: {
-          customer: { create: false, read: false, update: false, delete: false, exportCsv: false, exportCsvLimit: 0 },
+          customer: { create: false, read: false, update: false, delete: false, exportCsv: false },
           settings: { createShop: false, updateShop: false, deleteShop: false, createShopLimit: 0 },
           shop: { read: true },
         },
@@ -85,12 +83,12 @@ describe('usePermission', () => {
     expect(result.current.createShopLimit).toBe(0)
   })
 
-  it('tenant_owner / basic: 月100件制限', () => {
+  it('tenant_owner / basic: 店舗上限30', () => {
     mockUsePermissionContext.mockReturnValue({
       me: makeMe({
         plan: 'basic',
         permissions: {
-          customer: { create: true, read: true, update: true, delete: true, exportCsv: true, exportCsvLimit: 100 },
+          customer: { create: true, read: true, update: true, delete: true, exportCsv: true },
           settings: { createShop: true, updateShop: true, deleteShop: true, createShopLimit: 30 },
           shop: { read: true },
         },
@@ -102,8 +100,6 @@ describe('usePermission', () => {
 
     const { result } = renderHook(() => usePermission())
     expect(result.current.hasPermission('customer', 'exportCsv')).toBe(true)
-    expect(result.current.exportCsvLimit).toBe(100)
-    expect(result.current.isExportCsvLimitUnlimited).toBe(false)
     expect(result.current.createShopLimit).toBe(30)
     expect(result.current.isCreateShopLimitUnlimited).toBe(false)
   })

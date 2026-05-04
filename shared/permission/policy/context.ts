@@ -1,10 +1,13 @@
-import type { PolicyContext, Role } from '../types'
+import type { PolicyContext } from '../types'
 import { TenantOwnerCustomerPolicy } from './customer/roles/tenant-owner'
 import { ShopOwnerCustomerPolicy } from './customer/roles/shop-owner'
 import { ShopStaffCustomerPolicy } from './customer/roles/shop-staff'
 import { TenantOwnerSettingsPolicy } from './settings/roles/tenant-owner'
 import { ShopOwnerSettingsPolicy } from './settings/roles/shop-owner'
 import { AllReadShopPolicy } from './shop/index'
+import type { CustomerPermissions, CustomerPlanFeatures } from './customer/types'
+import type { SettingsPermissions, SettingsPlanFeatures } from './settings/types'
+import type { ShopPermissions } from './shop/types'
 
 export const POLICY_MAP = {
   customer: {
@@ -34,12 +37,20 @@ export const POLICY_MAP = {
 } as const
 
 export type PolicyTarget = keyof typeof POLICY_MAP
+
+export type CustomerPolicyActionKey = keyof (CustomerPermissions & CustomerPlanFeatures)
+export type SettingsPolicyActionKey = keyof (SettingsPermissions & SettingsPlanFeatures)
+export type ShopPolicyActionKey = keyof ShopPermissions
+
+export type PolicyOption =
+  | { target: 'customer'; action: CustomerPolicyActionKey }
+  | { target: 'settings'; action: SettingsPolicyActionKey }
+  | { target: 'shop'; action: ShopPolicyActionKey }
+
 export type Action = {
-  customer: keyof ReturnType<(typeof POLICY_MAP)['customer'][Role]>['listPermissions'] extends never
-    ? string
-    : string
-  settings: string
-  shop: string
+  customer: CustomerPolicyActionKey
+  settings: SettingsPolicyActionKey
+  shop: ShopPolicyActionKey
 }
 
 export function buildPermissionDeniedMessage(target: PolicyTarget, action: string): string {

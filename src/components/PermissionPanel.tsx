@@ -33,8 +33,7 @@ function Badge({ granted, label, note }: { granted: boolean; label: string; note
 
 export function PermissionPanel({ items, title }: Props) {
   const { me } = usePermissionContext()
-  const { hasPermission, createShopLimit, isCreateShopLimitUnlimited, exportCsvLimit, isExportCsvLimitUnlimited } =
-    usePermission()
+  const { hasPermission, createShopLimit, isCreateShopLimitUnlimited } = usePermission()
 
   if (!me) return null
 
@@ -82,9 +81,7 @@ export function PermissionPanel({ items, title }: Props) {
             note = isCreateShopLimitUnlimited ? '無制限' : `上限 ${createShopLimit}店`
           }
           if (item.action === 'exportCsv' && hasPermission('customer', 'exportCsv')) {
-            note = isExportCsvLimitUnlimited
-              ? '無制限'
-              : `月${exportCsvLimit}件`
+            note = '利用可'
           }
           return (
             <Badge
@@ -104,14 +101,8 @@ export function PermissionPanel({ items, title }: Props) {
           <strong>{isCreateShopLimitUnlimited ? '無制限' : `${createShopLimit}店`}</strong>
         </span>
         <span>
-          CSVエクスポート上限:{' '}
-          <strong>
-            {hasPermission('customer', 'exportCsv')
-              ? isExportCsvLimitUnlimited
-                ? '無制限'
-                : `月${exportCsvLimit}件`
-              : '利用不可'}
-          </strong>
+          CSVエクスポート:{' '}
+          <strong>{hasPermission('customer', 'exportCsv') ? '利用可能' : '利用不可'}</strong>
         </span>
       </div>
     </div>

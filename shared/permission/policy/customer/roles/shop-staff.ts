@@ -11,6 +11,6 @@ export class ShopStaffCustomerPolicy extends CustomerPolicyBase {
   }
 
   private planFeatures(): CustomerPlanFeatures {
-    return { exportCsv: false, exportCsvLimit: 0 }
+    return { exportCsv: false }
   }
 }

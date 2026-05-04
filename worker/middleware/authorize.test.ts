@@ -4,6 +4,7 @@ import type { HonoEnv } from '../type'
 import type { AuthContext } from 'shared/permission/types'
 import type { Repositories } from 'shared/permission/scope/resolver-types'
 import type { RelationResolver } from 'shared/permission/scope/resolver-types'
+import type { PolicyOption } from 'shared/permission/policy/context'
 import { authorize } from './authorize'
 
 const mockRepos: Repositories = {
@@ -85,7 +86,12 @@ describe('authorize middleware', () => {
       const app = testApp(auth, (a) =>
         a.get(
           '/bad-action',
-          authorize({ policy: { target: 'customer', action: 'nonexistentAction' } }),
+          authorize({
+            policy: {
+              target: 'customer',
+              action: 'nonexistentAction',
+            } as unknown as PolicyOption,
+          }),
           (c) => c.json({ ok: true }),
         ),
       )

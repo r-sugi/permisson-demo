@@ -1,6 +1,6 @@
 import { usePermissionContext } from './permissionContext'
 import { hasPermissionInMap } from 'shared/permission/permissions'
-import { SHOP_LIMIT_UNLIMITED, EXPORT_LIMIT_UNLIMITED } from 'shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from 'shared/permission/types'
 import type { PolicyTarget } from 'shared/permission/policy/context'
 
 export function usePermission() {
@@ -13,15 +13,10 @@ export function usePermission() {
   const createShopLimit = permissions?.settings.createShopLimit ?? 0
   const isCreateShopLimitUnlimited = createShopLimit === SHOP_LIMIT_UNLIMITED
 
-  const exportCsvLimit = permissions?.customer.exportCsvLimit ?? 0
-  const isExportCsvLimitUnlimited = exportCsvLimit === EXPORT_LIMIT_UNLIMITED
-
   return {
     permissions,
     hasPermission,
     createShopLimit,
     isCreateShopLimitUnlimited,
-    exportCsvLimit,
-    isExportCsvLimitUnlimited,
   }
 }
