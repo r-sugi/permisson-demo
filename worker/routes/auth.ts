@@ -106,14 +106,22 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
     const pw = await hashPassword('password')
 
     // ─── テナント ───
-    const tenantA = ulid()
-    const tenantB = ulid()
+    const tenantA         = ulid() // A社 (pro)
+    const tenantA_basic   = ulid() // A社 (basic)
+    const tenantA_starter = ulid() // A社 (starter)
+    const tenantB         = ulid() // B社 (basic)
+    const tenantB_pro     = ulid() // B社 (pro)
+    const tenantB_starter = ulid() // B社 (starter)
 
     await db
       .insert(schema.tenants)
       .values([
-        { id: tenantA, name: 'A社' },
-        { id: tenantB, name: 'B社' },
+        { id: tenantA,         name: 'A社' },
+        { id: tenantA_basic,   name: 'A社' },
+        { id: tenantA_starter, name: 'A社' },
+        { id: tenantB,         name: 'B社' },
+        { id: tenantB_pro,     name: 'B社' },
+        { id: tenantB_starter, name: 'B社' },
       ])
       .run()
 
@@ -121,59 +129,125 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
     await db
       .insert(schema.subscriptions)
       .values([
-        { id: ulid(), tenantId: tenantA, plan: 'pro', status: 'active' },
-        { id: ulid(), tenantId: tenantB, plan: 'basic', status: 'active' },
+        { id: ulid(), tenantId: tenantA,         plan: 'pro',     status: 'active' },
+        { id: ulid(), tenantId: tenantA_basic,   plan: 'basic',   status: 'active' },
+        { id: ulid(), tenantId: tenantA_starter, plan: 'starter', status: 'active' },
+        { id: ulid(), tenantId: tenantB,         plan: 'basic',   status: 'active' },
+        { id: ulid(), tenantId: tenantB_pro,     plan: 'pro',     status: 'active' },
+        { id: ulid(), tenantId: tenantB_starter, plan: 'starter', status: 'active' },
       ])
       .run()
 
     // ─── 店舗 ───
-    const shopA1 = ulid()
-    const shopA2 = ulid()
-    const shopB1 = ulid()
-    const shopB2 = ulid()
+    const shopA1         = ulid() // A社(pro) 渋谷店
+    const shopA2         = ulid() // A社(pro) 新宿店
+    const shopA_basic1   = ulid() // A社(basic) 渋谷店
+    const shopA_starter1 = ulid() // A社(starter) 渋谷店
+    const shopB1         = ulid() // B社(basic) 梅田店
+    const shopB2         = ulid() // B社(basic) 難波店
+    const shopB_pro1     = ulid() // B社(pro) 梅田店
+    const shopB_starter1 = ulid() // B社(starter) 梅田店
 
     await db
       .insert(schema.shops)
       .values([
-        { id: shopA1, tenantId: tenantA, name: 'A社 渋谷店' },
-        { id: shopA2, tenantId: tenantA, name: 'A社 新宿店' },
-        { id: shopB1, tenantId: tenantB, name: 'B社 梅田店' },
-        { id: shopB2, tenantId: tenantB, name: 'B社 難波店' },
+        { id: shopA1,         tenantId: tenantA,         name: 'A社 渋谷店' },
+        { id: shopA2,         tenantId: tenantA,         name: 'A社 新宿店' },
+        { id: shopA_basic1,   tenantId: tenantA_basic,   name: 'A社 渋谷店' },
+        { id: shopA_starter1, tenantId: tenantA_starter, name: 'A社 渋谷店' },
+        { id: shopB1,         tenantId: tenantB,         name: 'B社 梅田店' },
+        { id: shopB2,         tenantId: tenantB,         name: 'B社 難波店' },
+        { id: shopB_pro1,     tenantId: tenantB_pro,     name: 'B社 梅田店' },
+        { id: shopB_starter1, tenantId: tenantB_starter, name: 'B社 梅田店' },
       ])
       .run()
 
     // ─── ユーザー ───
-    const userAlice   = ulid() // tenant_owner × A社 (pro)
-    const userBob     = ulid() // tenant_staff × A社 (pro)
-    const userCharlie = ulid() // tenant_owner × B社 (basic)
-    const userDiana   = ulid() // tenant_staff × B社 (basic)
-    const userGrace   = ulid() // shop_owner × A社/shopA1 (pro)
-    const userHenry   = ulid() // shop_staff × A社/shopA1 (pro)
-    const userIris    = ulid() // shop_owner × B社/shopB1 (basic)
-    const userJack    = ulid() // shop_staff × B社/shopB1 (basic)
+    // A社(pro)
+    const userAlice   = ulid() // tenant_owner
+    const userBob     = ulid() // tenant_staff
+    const userGrace   = ulid() // shop_owner
+    const userHenry   = ulid() // shop_staff
+    // A社(basic)
+    const userEve     = ulid() // tenant_owner
+    const userFrank   = ulid() // tenant_staff
+    const userNora    = ulid() // shop_owner
+    const userOliver  = ulid() // shop_staff
+    // A社(starter)
+    const userPaul    = ulid() // tenant_owner
+    const userQuinn   = ulid() // tenant_staff
+    const userRachel  = ulid() // shop_owner
+    const userSam     = ulid() // shop_staff
+    // B社(basic)
+    const userCharlie = ulid() // tenant_owner
+    const userDiana   = ulid() // tenant_staff
+    const userIris    = ulid() // shop_owner
+    const userJack    = ulid() // shop_staff
+    // B社(pro)
+    const userTom     = ulid() // tenant_owner
+    const userUma     = ulid() // tenant_staff
+    const userVictor  = ulid() // shop_owner
+    const userWendy   = ulid() // shop_staff
+    // B社(starter)
+    const userXavier  = ulid() // tenant_owner
+    const userYara    = ulid() // tenant_staff
+    const userZoe     = ulid() // shop_owner
+    const userAlex    = ulid() // shop_staff
 
-    await db
-      .insert(schema.adminUsers)
-      .values([
-        { id: userAlice,   email: 'alice@example.com',   passwordHash: pw, tenantId: tenantA, role: 'tenant_owner' },
-        { id: userBob,     email: 'bob@example.com',     passwordHash: pw, tenantId: tenantA, role: 'tenant_staff' },
-        { id: userCharlie, email: 'charlie@example.com', passwordHash: pw, tenantId: tenantB, role: 'tenant_owner' },
-        { id: userDiana,   email: 'diana@example.com',   passwordHash: pw, tenantId: tenantB, role: 'tenant_staff' },
-        { id: userGrace,   email: 'grace@example.com',   passwordHash: pw, tenantId: tenantA, role: 'shop_owner' },
-        { id: userHenry,   email: 'henry@example.com',   passwordHash: pw, tenantId: tenantA, role: 'shop_staff' },
-        { id: userIris,    email: 'iris@example.com',    passwordHash: pw, tenantId: tenantB, role: 'shop_owner' },
-        { id: userJack,    email: 'jack@example.com',    passwordHash: pw, tenantId: tenantB, role: 'shop_staff' },
-      ])
-      .run()
+    // D1 のSQL変数上限を避けるため、8件ずつ分割してinsert
+    await db.insert(schema.adminUsers).values([
+      { id: userAlice,   email: 'alice@example.com',   passwordHash: pw, tenantId: tenantA,         role: 'tenant_owner' },
+      { id: userBob,     email: 'bob@example.com',     passwordHash: pw, tenantId: tenantA,         role: 'tenant_staff' },
+      { id: userGrace,   email: 'grace@example.com',   passwordHash: pw, tenantId: tenantA,         role: 'shop_owner' },
+      { id: userHenry,   email: 'henry@example.com',   passwordHash: pw, tenantId: tenantA,         role: 'shop_staff' },
+      { id: userEve,     email: 'eve@example.com',     passwordHash: pw, tenantId: tenantA_basic,   role: 'tenant_owner' },
+      { id: userFrank,   email: 'frank@example.com',   passwordHash: pw, tenantId: tenantA_basic,   role: 'tenant_staff' },
+      { id: userNora,    email: 'nora@example.com',    passwordHash: pw, tenantId: tenantA_basic,   role: 'shop_owner' },
+      { id: userOliver,  email: 'oliver@example.com',  passwordHash: pw, tenantId: tenantA_basic,   role: 'shop_staff' },
+    ]).run()
+    await db.insert(schema.adminUsers).values([
+      { id: userPaul,    email: 'paul@example.com',    passwordHash: pw, tenantId: tenantA_starter, role: 'tenant_owner' },
+      { id: userQuinn,   email: 'quinn@example.com',   passwordHash: pw, tenantId: tenantA_starter, role: 'tenant_staff' },
+      { id: userRachel,  email: 'rachel@example.com',  passwordHash: pw, tenantId: tenantA_starter, role: 'shop_owner' },
+      { id: userSam,     email: 'sam@example.com',     passwordHash: pw, tenantId: tenantA_starter, role: 'shop_staff' },
+      { id: userCharlie, email: 'charlie@example.com', passwordHash: pw, tenantId: tenantB,         role: 'tenant_owner' },
+      { id: userDiana,   email: 'diana@example.com',   passwordHash: pw, tenantId: tenantB,         role: 'tenant_staff' },
+      { id: userIris,    email: 'iris@example.com',    passwordHash: pw, tenantId: tenantB,         role: 'shop_owner' },
+      { id: userJack,    email: 'jack@example.com',    passwordHash: pw, tenantId: tenantB,         role: 'shop_staff' },
+    ]).run()
+    await db.insert(schema.adminUsers).values([
+      { id: userTom,     email: 'tom@example.com',     passwordHash: pw, tenantId: tenantB_pro,     role: 'tenant_owner' },
+      { id: userUma,     email: 'uma@example.com',     passwordHash: pw, tenantId: tenantB_pro,     role: 'tenant_staff' },
+      { id: userVictor,  email: 'victor@example.com',  passwordHash: pw, tenantId: tenantB_pro,     role: 'shop_owner' },
+      { id: userWendy,   email: 'wendy@example.com',   passwordHash: pw, tenantId: tenantB_pro,     role: 'shop_staff' },
+      { id: userXavier,  email: 'xavier@example.com',  passwordHash: pw, tenantId: tenantB_starter, role: 'tenant_owner' },
+      { id: userYara,    email: 'yara@example.com',    passwordHash: pw, tenantId: tenantB_starter, role: 'tenant_staff' },
+      { id: userZoe,     email: 'zoe@example.com',     passwordHash: pw, tenantId: tenantB_starter, role: 'shop_owner' },
+      { id: userAlex,    email: 'alex@example.com',    passwordHash: pw, tenantId: tenantB_starter, role: 'shop_staff' },
+    ]).run()
 
     // ─── Shop Assignments ───
     await db
       .insert(schema.shopAssignments)
       .values([
-        { id: ulid(), userId: userGrace, shopId: shopA1 },
-        { id: ulid(), userId: userHenry, shopId: shopA1 },
-        { id: ulid(), userId: userIris,  shopId: shopB1 },
-        { id: ulid(), userId: userJack,  shopId: shopB1 },
+        // A社(pro)
+        { id: ulid(), userId: userGrace,  shopId: shopA1 },
+        { id: ulid(), userId: userHenry,  shopId: shopA1 },
+        // A社(basic)
+        { id: ulid(), userId: userNora,   shopId: shopA_basic1 },
+        { id: ulid(), userId: userOliver, shopId: shopA_basic1 },
+        // A社(starter)
+        { id: ulid(), userId: userRachel, shopId: shopA_starter1 },
+        { id: ulid(), userId: userSam,    shopId: shopA_starter1 },
+        // B社(basic)
+        { id: ulid(), userId: userIris,   shopId: shopB1 },
+        { id: ulid(), userId: userJack,   shopId: shopB1 },
+        // B社(pro)
+        { id: ulid(), userId: userVictor, shopId: shopB_pro1 },
+        { id: ulid(), userId: userWendy,  shopId: shopB_pro1 },
+        // B社(starter)
+        { id: ulid(), userId: userZoe,    shopId: shopB_starter1 },
+        { id: ulid(), userId: userAlex,   shopId: shopB_starter1 },
       ])
       .run()
 
@@ -221,14 +295,36 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
     return c.json({
       message: 'Seed data reset successfully',
       users: [
+        // A社(pro)
         { email: 'alice@example.com',   role: 'tenant_owner', tenant: 'A社', plan: 'pro' },
         { email: 'bob@example.com',     role: 'tenant_staff', tenant: 'A社', plan: 'pro' },
-        { email: 'charlie@example.com', role: 'tenant_owner', tenant: 'B社', plan: 'basic' },
-        { email: 'diana@example.com',   role: 'tenant_staff', tenant: 'B社', plan: 'basic' },
         { email: 'grace@example.com',   role: 'shop_owner',   shop: 'A社 渋谷店', plan: 'pro' },
         { email: 'henry@example.com',   role: 'shop_staff',   shop: 'A社 渋谷店', plan: 'pro' },
+        // A社(basic)
+        { email: 'eve@example.com',     role: 'tenant_owner', tenant: 'A社', plan: 'basic' },
+        { email: 'frank@example.com',   role: 'tenant_staff', tenant: 'A社', plan: 'basic' },
+        { email: 'nora@example.com',    role: 'shop_owner',   shop: 'A社 渋谷店', plan: 'basic' },
+        { email: 'oliver@example.com',  role: 'shop_staff',   shop: 'A社 渋谷店', plan: 'basic' },
+        // A社(starter)
+        { email: 'paul@example.com',    role: 'tenant_owner', tenant: 'A社', plan: 'starter' },
+        { email: 'quinn@example.com',   role: 'tenant_staff', tenant: 'A社', plan: 'starter' },
+        { email: 'rachel@example.com',  role: 'shop_owner',   shop: 'A社 渋谷店', plan: 'starter' },
+        { email: 'sam@example.com',     role: 'shop_staff',   shop: 'A社 渋谷店', plan: 'starter' },
+        // B社(basic)
+        { email: 'charlie@example.com', role: 'tenant_owner', tenant: 'B社', plan: 'basic' },
+        { email: 'diana@example.com',   role: 'tenant_staff', tenant: 'B社', plan: 'basic' },
         { email: 'iris@example.com',    role: 'shop_owner',   shop: 'B社 梅田店', plan: 'basic' },
         { email: 'jack@example.com',    role: 'shop_staff',   shop: 'B社 梅田店', plan: 'basic' },
+        // B社(pro)
+        { email: 'tom@example.com',     role: 'tenant_owner', tenant: 'B社', plan: 'pro' },
+        { email: 'uma@example.com',     role: 'tenant_staff', tenant: 'B社', plan: 'pro' },
+        { email: 'victor@example.com',  role: 'shop_owner',   shop: 'B社 梅田店', plan: 'pro' },
+        { email: 'wendy@example.com',   role: 'shop_staff',   shop: 'B社 梅田店', plan: 'pro' },
+        // B社(starter)
+        { email: 'xavier@example.com',  role: 'tenant_owner', tenant: 'B社', plan: 'starter' },
+        { email: 'yara@example.com',    role: 'tenant_staff', tenant: 'B社', plan: 'starter' },
+        { email: 'zoe@example.com',     role: 'shop_owner',   shop: 'B社 梅田店', plan: 'starter' },
+        { email: 'alex@example.com',    role: 'shop_staff',   shop: 'B社 梅田店', plan: 'starter' },
       ],
       password: 'password',
     })

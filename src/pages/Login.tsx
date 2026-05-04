@@ -4,14 +4,36 @@ import { usePermissionContext } from '@/providers/permission/permissionContext'
 import { apiClient, parseJson } from '@/lib/apiClient'
 
 const SEED_USERS = [
+  // A社(pro)
   { email: 'alice@example.com',   label: 'Alice',   role: 'tenant_owner', tenant: 'A社', plan: 'pro' },
   { email: 'bob@example.com',     label: 'Bob',     role: 'tenant_staff', tenant: 'A社', plan: 'pro' },
   { email: 'grace@example.com',   label: 'Grace',   role: 'shop_owner',   shop: 'A社 渋谷店', plan: 'pro' },
   { email: 'henry@example.com',   label: 'Henry',   role: 'shop_staff',   shop: 'A社 渋谷店', plan: 'pro' },
+  // A社(basic)
+  { email: 'eve@example.com',     label: 'Eve',     role: 'tenant_owner', tenant: 'A社', plan: 'basic' },
+  { email: 'frank@example.com',   label: 'Frank',   role: 'tenant_staff', tenant: 'A社', plan: 'basic' },
+  { email: 'nora@example.com',    label: 'Nora',    role: 'shop_owner',   shop: 'A社 渋谷店', plan: 'basic' },
+  { email: 'oliver@example.com',  label: 'Oliver',  role: 'shop_staff',   shop: 'A社 渋谷店', plan: 'basic' },
+  // A社(starter)
+  { email: 'paul@example.com',    label: 'Paul',    role: 'tenant_owner', tenant: 'A社', plan: 'starter' },
+  { email: 'quinn@example.com',   label: 'Quinn',   role: 'tenant_staff', tenant: 'A社', plan: 'starter' },
+  { email: 'rachel@example.com',  label: 'Rachel',  role: 'shop_owner',   shop: 'A社 渋谷店', plan: 'starter' },
+  { email: 'sam@example.com',     label: 'Sam',     role: 'shop_staff',   shop: 'A社 渋谷店', plan: 'starter' },
+  // B社(basic)
   { email: 'charlie@example.com', label: 'Charlie', role: 'tenant_owner', tenant: 'B社', plan: 'basic' },
   { email: 'diana@example.com',   label: 'Diana',   role: 'tenant_staff', tenant: 'B社', plan: 'basic' },
   { email: 'iris@example.com',    label: 'Iris',    role: 'shop_owner',   shop: 'B社 梅田店', plan: 'basic' },
   { email: 'jack@example.com',    label: 'Jack',    role: 'shop_staff',   shop: 'B社 梅田店', plan: 'basic' },
+  // B社(pro)
+  { email: 'tom@example.com',     label: 'Tom',     role: 'tenant_owner', tenant: 'B社', plan: 'pro' },
+  { email: 'uma@example.com',     label: 'Uma',     role: 'tenant_staff', tenant: 'B社', plan: 'pro' },
+  { email: 'victor@example.com',  label: 'Victor',  role: 'shop_owner',   shop: 'B社 梅田店', plan: 'pro' },
+  { email: 'wendy@example.com',   label: 'Wendy',   role: 'shop_staff',   shop: 'B社 梅田店', plan: 'pro' },
+  // B社(starter)
+  { email: 'xavier@example.com',  label: 'Xavier',  role: 'tenant_owner', tenant: 'B社', plan: 'starter' },
+  { email: 'yara@example.com',    label: 'Yara',    role: 'tenant_staff', tenant: 'B社', plan: 'starter' },
+  { email: 'zoe@example.com',     label: 'Zoe',     role: 'shop_owner',   shop: 'B社 梅田店', plan: 'starter' },
+  { email: 'alex@example.com',    label: 'Alex',    role: 'shop_staff',   shop: 'B社 梅田店', plan: 'starter' },
 ]
 
 const ROLE_ORDER = ['tenant_owner', 'tenant_staff', 'shop_owner', 'shop_staff'] as const
