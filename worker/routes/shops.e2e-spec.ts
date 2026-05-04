@@ -141,7 +141,7 @@ describe('POST /api/tenants/:tenantId/shops - 店舗作成', () => {
 describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
   beforeEach(() => resetDb())
 
-  it('tenant_owner(S社): 200 で論理削除', async () => {
+  it('tenant_owner(S社): 200 で物理削除', async () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedFetch(
       `/api/tenants/${TEST_TENANT_S_ID}/shops/${TEST_SHOP_S1_ID}`,
@@ -149,9 +149,8 @@ describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
       { method: 'DELETE' },
     )
     expect(res.status).toBe(200)
-    const body = await res.json() as { shopId: string; deletedAt: string }
+    const body = await res.json() as { shopId: string }
     expect(body.shopId).toBe(TEST_SHOP_S1_ID)
-    expect(body.deletedAt).toBeTruthy()
 
     // 削除後、一覧から消えていることを確認
     const listRes = await authedFetch('/api/shops', token)

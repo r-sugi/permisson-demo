@@ -8,7 +8,7 @@ export interface ShopAssignmentRepository {
 }
 
 export interface ShopRepository {
-  findById(shopId: string): Promise<{ tenantId: string; deletedAt: string | null } | null>
+  findById(shopId: string): Promise<{ tenantId: string } | null>
 }
 
 export interface PurchaseHistoryRepository {

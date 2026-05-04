@@ -21,7 +21,7 @@ export const resolveShopViaTenant =
   (shopId: ShopId): RelationResolver =>
   async (repo, auth) => {
     const shop = await repo.shop.findById(shopId)
-    if (!shop || shop.deletedAt) return false
+    if (!shop) return false
     return shop.tenantId === auth.tenantId
   }
 
@@ -31,7 +31,7 @@ export const resolveCustomerViaShop =
     const history = await repo.purchaseHistory.findByCustomerId(customerId)
     if (!history) return false
     const shop = await repo.shop.findById(history.shopId)
-    if (!shop || shop.deletedAt) return false
+    if (!shop) return false
 
     if (isTenantWideRole(auth.role)) {
       return shop.tenantId === auth.tenantId
@@ -47,6 +47,6 @@ export const resolveShopInTenantContext =
   async (repo, auth) => {
     if (auth.tenantId !== tenantId) return false
     const shop = await repo.shop.findById(shopId)
-    if (!shop || shop.deletedAt) return false
+    if (!shop) return false
     return shop.tenantId === auth.tenantId
   }

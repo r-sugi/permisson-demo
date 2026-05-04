@@ -39,7 +39,7 @@ export class CustomerUseCase {
     memo?: string
   }) {
     const shop = await this.shopRepo.findById(data.shopId)
-    if (!shop || shop.deletedAt || shop.tenantId !== this.auth.tenantId) {
+    if (!shop || shop.tenantId !== this.auth.tenantId) {
       throw new HTTPException(404, { message: 'Not Found' })
     }
 

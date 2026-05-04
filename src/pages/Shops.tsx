@@ -8,7 +8,6 @@ type Shop = {
   id: string
   tenantId: string
   name: string
-  deletedAt: string | null
   createdAt: string
 }
 
@@ -50,7 +49,7 @@ export function ShopsPage() {
 
 
   const handleDelete = async (shop: Shop) => {
-    if (!confirm(`「${shop.name}」を削除しますか？（論理削除）`)) return
+    if (!confirm(`「${shop.name}」を削除しますか？（元に戻せません）`)) return
     try {
       const delRes = await apiClient.api.tenants[':tenantId'].shops[':shopId'].$delete({
         param: { tenantId: shop.tenantId, shopId: shop.id },

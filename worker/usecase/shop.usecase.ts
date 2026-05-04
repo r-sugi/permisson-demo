@@ -38,12 +38,11 @@ export class ShopUseCase {
 
   async deleteShop(shopId: string) {
     const shop = await this.shopRepo.findById(shopId)
-    if (!shop || shop.deletedAt || shop.tenantId !== this.auth.tenantId) {
+    if (!shop || shop.tenantId !== this.auth.tenantId) {
       throw new HTTPException(404, { message: 'Not Found' })
     }
-    const now = new Date().toISOString()
-    await this.shopRepo.softDelete(shopId, now)
-    return { shopId, deletedAt: now }
+    await this.shopRepo.deleteById(shopId)
+    return { shopId }
   }
 
   async getShopCountByTenant(tenantId: string): Promise<number> {
