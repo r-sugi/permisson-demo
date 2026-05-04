@@ -241,15 +241,14 @@ export function LoginPage() {
                   <tr className="bg-gray-50">
                     <th className="px-3 py-2 text-left text-gray-600 font-medium border border-gray-200">プラン</th>
                     <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">CSV出力</th>
-                    <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">CSV件数上限</th>
                     <th className="px-3 py-2 text-gray-600 font-medium border border-gray-200">店舗作成上限</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    { label: 'pro',     row: ['✅', '無制限',  '無制限'] },
-                    { label: 'basic',   row: ['✅', '月100件', '30店'] },
-                    { label: 'starter', row: ['❌', '—',       '5店'] },
+                    { label: 'pro',     row: ['✅', '無制限'] },
+                    { label: 'basic',   row: ['✅', '30店'] },
+                    { label: 'starter', row: ['❌', '5店'] },
                   ].map(({ label, row }) => (
                     <tr key={label} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-3 py-2 text-left font-medium text-gray-700 border border-gray-200">
