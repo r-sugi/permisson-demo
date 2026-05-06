@@ -35,6 +35,28 @@ function testApp(auth: AuthContext, routes: (app: Hono<HonoEnv>) => void) {
 }
 
 describe('authorize middleware', () => {
+  describe('policy / relation どちらも無い場合（fallback-deny）', () => {
+    it('403 — 型をすり抜けた不正呼び出しも実行時で拒否', async () => {
+      const auth: AuthContext = {
+        userId: 'u',
+        tenantId: 't',
+        role: 'tenant_owner',
+        plan: 'pro',
+      }
+      const app = testApp(auth, (a) =>
+        a.get(
+          '/empty-authz',
+          // 実行時ガードのテスト: 素の {} は型で弾かれるためキャストして誤設定をシミュレートする
+          authorize({} as Parameters<typeof authorize>[0]),
+          (c) => c.json({ ok: true }),
+        ),
+      )
+      const res = await app.request('/empty-authz')
+      expect(res.status).toBe(403)
+      expect(await res.text()).toContain('requires policy and/or relation')
+    })
+  })
+
   describe('policy のみ', () => {
     it('許可アクションなら 200', async () => {
       const auth: AuthContext = {

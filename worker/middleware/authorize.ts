@@ -11,17 +11,26 @@ import {
 } from '@shared/permission/policy/context'
 
 // biome-ignore lint/complexity/noBannedTypes: Hono の既定 Input（空オブジェクト）はフレームワーク慣例
-type AuthorizeOptions<I extends Input = {}> = {
-  policy?: PolicyOption
+type RelationAuthorizeOption<I extends Input = {}> = {
   /** リクエストごとに URL 等から Resolver を組み立てる（Hono の Context が必要なため） */
-  relation?: {
-    resolver: (c: Context<HonoEnv, string, I>) => GateRelationResolver
-  }
+  resolver: (c: Context<HonoEnv, string, I>) => GateRelationResolver
 }
+
+// biome-ignore lint/complexity/noBannedTypes: Hono の既定 Input（空オブジェクト）はフレームワーク慣例
+type AuthorizeOptions<I extends Input = {}> =
+  | { policy: PolicyOption; relation?: RelationAuthorizeOption<I> }
+  | { relation: RelationAuthorizeOption<I>; policy?: PolicyOption }
 
 // biome-ignore lint/complexity/noBannedTypes: 同上
 export function authorize<I extends Input = {}>(options: AuthorizeOptions<I>) {
   return createMiddleware<HonoEnv, string, I>(async (c, next) => {
+    if (!options.policy && !options.relation) {
+      throw new HTTPException(403, {
+        message:
+          'Permission denied: authorize() requires policy and/or relation (misconfigured route)',
+      })
+    }
+
     const auth = c.get('auth') as AuthContext
 
     // Gate 1: PBAC（role + plan でインメモリ評価・DBアクセスなし）

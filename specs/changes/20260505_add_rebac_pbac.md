@@ -81,7 +81,8 @@ PBACを先に評価することでDBアクセスを最小化できる。ReBACの
 - **一覧スコープ**: `UserRelationRepository.resolveForUser` は `{ kind: 'tenant', tenantId } | { kind: 'shops', shopIds }`。店舗割当ロールは **`shop_assignments` を複数行**ユニオン。`TenantCustomerScope` / `ShopsCustomerScope` は **EXISTS・JOIN** で SQL にスコープを表現し、全顧客 ID のメモリ展開と巨大 `IN` を避ける。
 - **POLICY_MAP**（`shared/permission/policy/context.ts`）: `tenant_owner` と同一 `TenantOwner*Policy` を共有するロール（`developer` / `tenant_staff` / `system` 等）は **共通ファクトリ関数**にまとめ、コメントで意図を明示する。
 - **ルートパラメータ**: `tenantId` / `shopId` / 顧客 `:id` は **`zValidator('param', z.object({…}))`** で検証したうえで Brand（`TenantId` / `ShopId` / `CustomerId`）へ渡す（空文字を Brand にキャストしない）。
-- **未実装（意図的に範囲外）**: Gate ごとの構造化監査ログ、`policy` と `relation` の両方省略時に `authorize` を落とす防御コードは **本リポジトリでは入れていない**。
+- **未実装（意図的に範囲外）**: Gate ごとの構造化監査ログ。
+- **実装済み**: `policy` と `relation` の両方が欠ける（不正呼び出し）場合は **`authorize` が HTTP 403（fallback-deny）**。
 
 ---
 
