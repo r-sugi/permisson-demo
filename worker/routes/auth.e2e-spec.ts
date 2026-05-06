@@ -11,7 +11,7 @@ import {
 describe('POST /api/auth/seed', () => {
   beforeEach(() => resetDb())
 
-  it('200: シードデータを投入して12ユーザーを返す', async () => {
+  it('200: シードデータを投入して24ユーザーを返す', async () => {
     // まず seed エンドポイントを呼ぶ
     const res = await SELF.fetch('http://localhost/api/auth/seed', { method: 'POST' })
     expect(res.status).toBe(200)

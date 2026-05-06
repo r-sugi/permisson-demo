@@ -10,13 +10,13 @@ const SQLITE_PARAM_LIMIT = 900
 function tenantScopeExists(db: DrizzleDb, tenantId: string) {
   return exists(
     db
-      .select({ id: schema.purchaseHistories.id })
+      .select({ x: schema.purchaseHistories.customerId })
       .from(schema.purchaseHistories)
       .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
       .where(
         and(
-          eq(schema.purchaseHistories.customerId, schema.customers.id),
           eq(schema.shops.tenantId, tenantId),
+          eq(schema.purchaseHistories.customerId, schema.customers.id),
         ),
       ),
   )
@@ -25,7 +25,7 @@ function tenantScopeExists(db: DrizzleDb, tenantId: string) {
 function shopsScopeExists(db: DrizzleDb, userId: string) {
   return exists(
     db
-      .select({ id: schema.purchaseHistories.id })
+      .select({ x: schema.purchaseHistories.customerId })
       .from(schema.purchaseHistories)
       .innerJoin(
         schema.shopAssignments,
@@ -47,15 +47,15 @@ class TenantCustomerScope extends BaseCustomerScope {
   }
 
   async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRowWithDisplay[]> {
+    const tenantPred = eq(schema.shops.tenantId, this.tenantId)
+    const whereClause = cursor
+      ? and(tenantPred, gt(schema.purchaseHistories.customerId, cursor))
+      : tenantPred
     const idRows = await this.db
       .select({ id: schema.purchaseHistories.customerId })
       .from(schema.purchaseHistories)
       .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
-      .where(
-        cursor
-          ? and(eq(schema.shops.tenantId, this.tenantId), gt(schema.purchaseHistories.customerId, cursor))
-          : eq(schema.shops.tenantId, this.tenantId),
-      )
+      .where(whereClause)
       .groupBy(schema.purchaseHistories.customerId)
       .orderBy(asc(schema.purchaseHistories.customerId))
       .limit(limit)

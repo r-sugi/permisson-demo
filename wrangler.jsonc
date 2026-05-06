@@ -30,6 +30,6 @@
 
   // E2E は vitest の bindings で SEED_CUSTOMER_COUNT を上書きして短時間に抑える
   "vars": {
-    "SEED_CUSTOMER_COUNT": "1000000"
+    "SEED_CUSTOMER_COUNT": "100000"
   }
 }

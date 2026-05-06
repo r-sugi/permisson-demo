@@ -2,7 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { buildPermissionsMap } from '@shared/permission/permissions'
 import { isTenantAssignmentRole } from '@shared/permission/scope/types'
 import type { Role } from '@shared/permission/types'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { sign } from 'hono/jwt'
@@ -10,6 +10,14 @@ import { ulid } from 'ulidx'
 import { z } from 'zod'
 import { schema } from '../rdb/index'
 import type { HonoEnv } from '../type'
+
+export type DemoUser = {
+  email: string
+  role: string
+  plan: string
+  tenantName: string
+  shopName: string | null
+}
 
 // ─────────────────────────────────────────────
 // パスワードハッシュ（Web Crypto API）
@@ -27,7 +35,8 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return (await hashPassword(password)) === hash
 }
 
-const DEFAULT_SEED_CUSTOMERS = 1_000_000
+/** 既定: A社・B社あわせて約10万件（インデックス前半／後半で店舗側を振り分け） */
+const DEFAULT_SEED_CUSTOMERS = 100_000
 
 function seedCustomerTargetFromEnv(countBinding: string | undefined): number {
   if (countBinding === undefined || countBinding === '') return DEFAULT_SEED_CUSTOMERS
@@ -415,7 +424,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
       ])
       .run()
 
-    // ─── 顧客（既定 1,000,000 件・顧客インデックス前半は A 社店舗、後半は B 社店舗）───
+    // ─── 顧客（既定 100,000 件・顧客インデックス前半は A 社店舗、後半は B 社店舗）───
     const namedTemplates = [
       { name: '田中 一郎', email: 'tanaka1@example.com', tag: 'VIP', memo: 'A社常連' },
       { name: '佐藤 花子', email: 'sato@example.com', tag: null, memo: null },
@@ -500,7 +509,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
     }
 
     return c.json({
-      message: 'Seed data reset successfully',
+      message: 'Seed data reset successfully' as const,
       users: [
         // A社(pro)
         { email: 'alice@example.com', role: 'tenant_owner', tenant: 'A社', plan: 'pro' },
@@ -535,6 +544,28 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
       ],
       password: 'password',
     })
+  })
+
+  // GET /api/auth/demo-users（開発用：ログイン画面のユーザー一覧）
+  .get('/demo-users', async (c) => {
+    const db = c.get('db')
+
+    const rows = await db
+      .select({
+        email: schema.adminUsers.email,
+        role: schema.adminUsers.role,
+        plan: schema.subscriptions.plan,
+        tenantName: schema.tenants.name,
+        shopName: schema.shops.name,
+      })
+      .from(schema.adminUsers)
+      .innerJoin(schema.tenants, eq(schema.adminUsers.tenantId, schema.tenants.id))
+      .innerJoin(schema.subscriptions, eq(schema.subscriptions.tenantId, schema.tenants.id))
+      .leftJoin(schema.shopAssignments, eq(schema.shopAssignments.userId, schema.adminUsers.id))
+      .leftJoin(schema.shops, eq(schema.shops.id, schema.shopAssignments.shopId))
+      .all()
+
+    return c.json(rows satisfies DemoUser[])
   })
 
 // ─────────────────────────────────────────────

@@ -65,6 +65,7 @@ export class CustomerUseCase {
       id: ulid(),
       customerId,
       shopId: data.shopId,
+      tenantId: shop.tenantId,
     })
 
     const customer = await this.customerRepo.findRowById(customerId)

@@ -20,7 +20,7 @@ export const app = new Hono<HonoEnv>()
       return c.json({ message: err.message }, err.status as ContentfulStatusCode)
     }
     if (err instanceof HTTPException) {
-      return err.getResponse()
+      return c.json({ message: err.message }, err.status as ContentfulStatusCode)
     }
     console.error(err)
     return c.json({ message: 'Internal Server Error' }, 500)

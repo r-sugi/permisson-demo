@@ -8,9 +8,16 @@ export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort 
 
   async insert(
     executor: DrizzleExecutor,
-    values: { id: string; customerId: string; shopId: string },
+    values: { id: string; customerId: string; shopId: string; tenantId: string },
   ): Promise<void> {
-    await executor.insert(schema.purchaseHistories).values(values).run()
+    await executor
+      .insert(schema.purchaseHistories)
+      .values({
+        id: values.id,
+        customerId: values.customerId,
+        shopId: values.shopId,
+      })
+      .run()
   }
 
   async findByCustomerId(customerId: string) {

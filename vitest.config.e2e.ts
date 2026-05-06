@@ -29,7 +29,10 @@ export default defineConfig(async () => {
     test: {
       globals: true,
       include: ['worker/**/*.e2e-spec.ts'],
+      /** Workers プールで複数ファイル並列だと SELF / Miniflare が競合しタイムアウトしやすい */
+      fileParallelism: false,
       testTimeout: 60000,
+      hookTimeout: 120000,
       setupFiles: ['./worker/test/apply-migrations.ts'],
     },
   }
