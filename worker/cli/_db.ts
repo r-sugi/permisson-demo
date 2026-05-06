@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { readdirSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { schema } from '../rdb/index'
@@ -19,11 +19,9 @@ export function findSqliteFile(): string {
 }
 
 type SqliteHandle = InstanceType<typeof Database>
+type AppDrizzleDb = ReturnType<typeof drizzle<typeof schema>>
 
-export function openDb(): {
-  sqlite: SqliteHandle
-  db: BetterSQLite3Database<typeof schema>
-} {
+export function openDb(): { sqlite: SqliteHandle; db: AppDrizzleDb } {
   const sqlitePath = findSqliteFile()
   console.log(`SQLite: ${sqlitePath}`)
   const sqlite = new Database(sqlitePath)
