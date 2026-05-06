@@ -1,17 +1,18 @@
-import { HTTPException } from 'hono/http-exception'
-import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { Hono } from 'hono'
-import { jwt } from 'hono/jwt'
-import { cors } from 'hono/cors'
-import { sql } from 'drizzle-orm'
 import { isMyAppError } from '@shared/error'
-import type { HonoEnv } from './type'
-import { createDatabaseConnection } from './services/database.service'
+import { sql } from 'drizzle-orm'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { HTTPException } from 'hono/http-exception'
+import { jwt } from 'hono/jwt'
+import { logger } from 'hono/logger'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { authContextMiddleware } from './middleware/auth'
 import { diMiddleware } from './middleware/di'
-import { publicAuthRoutes, protectedAuthRoutes } from './routes/auth'
+import { protectedAuthRoutes, publicAuthRoutes } from './routes/auth'
 import { customerRoutes } from './routes/customers'
 import { shopListRoutes, tenantShopRoutes } from './routes/shops'
+import { createDatabaseConnection } from './services/database.service'
+import type { HonoEnv } from './type'
 
 export const app = new Hono<HonoEnv>()
   .onError((err, c) => {
@@ -24,6 +25,8 @@ export const app = new Hono<HonoEnv>()
     console.error(err)
     return c.json({ message: 'Internal Server Error' }, 500)
   })
+
+  .use('/api/*', logger())
 
   // DB 接続ミドルウェア（全 /api/* に適用）
   .use('/api/*', async (c, next) => {

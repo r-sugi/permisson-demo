@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Permission } from '@/components/Permission'
 import { PermissionPanel } from '@/components/PermissionPanel'
 import { apiClient, parseJson } from '@/lib/apiClient'
@@ -6,6 +6,7 @@ import { apiClient, parseJson } from '@/lib/apiClient'
 type Customer = {
   id: string
   name: string
+  displayName: string
   email: string
   tag: string | null
   memo: string | null
@@ -343,7 +344,7 @@ export function CustomersPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-gray-600 font-medium">名前</th>
+                <th className="px-4 py-3 text-left text-gray-600 font-medium">表示名</th>
                 <th className="px-4 py-3 text-left text-gray-600 font-medium">メール</th>
                 <th className="px-4 py-3 text-left text-gray-600 font-medium">タグ</th>
                 <th className="px-4 py-3 text-left text-gray-600 font-medium">メモ</th>
@@ -397,7 +398,7 @@ export function CustomersPage() {
                   </tr>
                 ) : (
                   <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-800">{c.name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{c.displayName}</td>
                     <td className="px-4 py-3 text-gray-500">{c.email}</td>
                     <td className="px-4 py-3">
                       {c.tag ? (

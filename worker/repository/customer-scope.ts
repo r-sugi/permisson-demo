@@ -1,9 +1,9 @@
-import { and, asc, eq, exists, gt, inArray, type SQL } from 'drizzle-orm'
 import type { CustomerScope } from '@shared/permission/scope/customer/scope'
 import { BaseCustomerScope } from '@shared/permission/scope/customer/scope'
-import type { DrizzleDb } from '../services/database.service'
+import { and, eq, exists, gt, inArray, type SQL } from 'drizzle-orm'
 import { schema } from '../rdb/index'
-import type { CustomerRow } from '../rdb/models/customers'
+import type { DrizzleDb } from '../services/database.service'
+import { type CustomerRowWithDisplay, customerRowsWithDisplayQuery } from './customer.repository'
 
 const SQLITE_PARAM_LIMIT = 900
 
@@ -53,15 +53,9 @@ class TenantCustomerScope extends BaseCustomerScope {
     super()
   }
 
-  async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRow[]> {
+  async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRowWithDisplay[]> {
     const scopePred = tenantScopeExists(this.db, this.tenantId)
-    return this.db
-      .select()
-      .from(schema.customers)
-      .where(customerWhere(scopePred, cursor))
-      .orderBy(asc(schema.customers.id))
-      .limit(limit)
-      .all()
+    return customerRowsWithDisplayQuery(this.db, customerWhere(scopePred, cursor), limit).all()
   }
 
   async isCustomerInScope(customerId: string): Promise<boolean> {
@@ -105,15 +99,9 @@ class ShopsCustomerScope extends BaseCustomerScope {
     super()
   }
 
-  async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRow[]> {
+  async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRowWithDisplay[]> {
     const scopePred = shopsScopeExists(this.db, this.userId)
-    return this.db
-      .select()
-      .from(schema.customers)
-      .where(customerWhere(scopePred, cursor))
-      .orderBy(asc(schema.customers.id))
-      .limit(limit)
-      .all()
+    return customerRowsWithDisplayQuery(this.db, customerWhere(scopePred, cursor), limit).all()
   }
 
   async isCustomerInScope(customerId: string): Promise<boolean> {

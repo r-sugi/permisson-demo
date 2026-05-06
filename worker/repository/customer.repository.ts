@@ -1,13 +1,67 @@
-import { eq } from 'drizzle-orm'
-import { HTTPException } from 'hono/http-exception'
-import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
-import { schema } from '../rdb/index'
 import type { CustomerScope } from '@shared/permission/scope/customer/scope'
+import type { SQL } from 'drizzle-orm'
+import { asc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { HTTPException } from 'hono/http-exception'
+import { schema } from '../rdb/index'
 import type { CustomerRow } from '../rdb/models/customers'
-import { UserRelationRepository } from './user-relation.repository'
+import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { createCustomerScope } from './customer-scope'
+import { UserRelationRepository } from './user-relation.repository'
 
 const EXPORT_PAGE_SIZE = 500
+
+/** PH が複数あるときは `min(id)` で代表行を 1 件に寄せる（シード・作成フローでは実質 1 件） */
+function phFirstPickSubquery(db: DrizzleDb) {
+  return db
+    .select({
+      customerId: schema.purchaseHistories.customerId,
+      pickPhId: sql<string>`min(${schema.purchaseHistories.id})`.as('pickPhId'),
+    })
+    .from(schema.purchaseHistories)
+    .groupBy(schema.purchaseHistories.customerId)
+    .as('ph_first')
+}
+
+export type CustomerRowWithDisplay = CustomerRow & {
+  displayName: string
+}
+
+/** `{顧客名}-{テナント名}-{店舗名}` を関連テーブルから SELECT 時に算出 */
+const customerWithDisplaySelection = {
+  ...getTableColumns(schema.customers),
+  displayName:
+    sql<string>`${schema.customers.name} || '-' || ${schema.tenants.name} || '-' || ${schema.shops.name}`
+      .mapWith(String)
+      .as('displayName'),
+} satisfies Record<string, unknown>
+
+/** スコープ WHERE 付きの一覧用クエリ（customer-scope から利用） */
+export function customerRowsWithDisplayQuery(db: DrizzleDb, whereClause: SQL, limit: number) {
+  const phFirst = phFirstPickSubquery(db)
+  return db
+    .select(customerWithDisplaySelection)
+    .from(schema.customers)
+    .innerJoin(phFirst, eq(schema.customers.id, phFirst.customerId))
+    .innerJoin(schema.purchaseHistories, eq(schema.purchaseHistories.id, phFirst.pickPhId))
+    .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
+    .innerJoin(schema.tenants, eq(schema.tenants.id, schema.shops.tenantId))
+    .where(whereClause)
+    .orderBy(asc(schema.customers.id))
+    .limit(limit)
+}
+
+function getCustomerWithDisplayById(db: DrizzleDb, customerId: string) {
+  const phFirst = phFirstPickSubquery(db)
+  return db
+    .select(customerWithDisplaySelection)
+    .from(schema.customers)
+    .innerJoin(phFirst, eq(schema.customers.id, phFirst.customerId))
+    .innerJoin(schema.purchaseHistories, eq(schema.purchaseHistories.id, phFirst.pickPhId))
+    .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
+    .innerJoin(schema.tenants, eq(schema.tenants.id, schema.shops.tenantId))
+    .where(eq(schema.customers.id, customerId))
+    .get()
+}
 
 export class CustomerRepository {
   private scopeCache?: CustomerScope
@@ -41,9 +95,9 @@ export class CustomerRepository {
   async findPage(
     cursor: string | null,
     pageLimit: number,
-  ): Promise<{ items: CustomerRow[]; nextCursor: string | null }> {
+  ): Promise<{ items: CustomerRowWithDisplay[]; nextCursor: string | null }> {
     const scope = await this.resolveScope()
-    const rows = (await scope.findCustomerRows(cursor, pageLimit + 1)) as CustomerRow[]
+    const rows = (await scope.findCustomerRows(cursor, pageLimit + 1)) as CustomerRowWithDisplay[]
     const hasMore = rows.length > pageLimit
     const items = hasMore ? rows.slice(0, pageLimit) : rows
     const nextCursor = hasMore && items.length > 0 ? items[items.length - 1]?.id : null
@@ -56,7 +110,7 @@ export class CustomerRepository {
     if (!ok) {
       throw new HTTPException(404, { message: 'Not Found' })
     }
-    return this.db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).get()
+    return getCustomerWithDisplayById(this.db, customerId)
   }
 
   async validateIds(customerIds: string[]): Promise<string[]> {
@@ -73,7 +127,7 @@ export class CustomerRepository {
 
   /** 作成直後の応答など、スコープ解決なしで1件取得する */
   async findRowById(customerId: string) {
-    return this.db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).get()
+    return getCustomerWithDisplayById(this.db, customerId)
   }
 
   async update(
@@ -86,7 +140,7 @@ export class CustomerRepository {
       .set(data)
       .where(eq(schema.customers.id, customerId))
       .run()
-    return this.db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).get()
+    return getCustomerWithDisplayById(this.db, customerId)
   }
 
   async delete(customerId: string) {
@@ -96,7 +150,7 @@ export class CustomerRepository {
   }
 
   async exportAll() {
-    const all: CustomerRow[] = []
+    const all: CustomerRowWithDisplay[] = []
     let cursor: string | null = null
     for (;;) {
       const { items, nextCursor } = await this.findPage(cursor, EXPORT_PAGE_SIZE)
