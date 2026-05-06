@@ -3,8 +3,9 @@ import { logRailsLikeSqlQuery, roundDurationMs } from './rails-like-sql-logger'
 /** D1 の応答から DB 側の実行時間が取れればそれを優先（なければフォールバック） */
 function resolvedDurationMs(result: unknown, wallMs: number): number {
   if (result !== null && typeof result === 'object' && 'meta' in result) {
-    const meta = (result as { meta?: { duration?: number; timings?: { sql_duration_ms?: number } } })
-      .meta
+    const meta = (
+      result as { meta?: { duration?: number; timings?: { sql_duration_ms?: number } } }
+    ).meta
     if (meta?.timings?.sql_duration_ms != null) {
       return roundDurationMs(meta.timings.sql_duration_ms)
     }
@@ -42,7 +43,11 @@ function wrapBoundStatement(
           const t0 = performance.now()
           return Promise.resolve(value.apply(target, args)).then(
             (result) => {
-              logRailsLikeSqlQuery(sqlText, bindArgs, resolvedDurationMs(result, performance.now() - t0))
+              logRailsLikeSqlQuery(
+                sqlText,
+                bindArgs,
+                resolvedDurationMs(result, performance.now() - t0),
+              )
               return result
             },
             (err) => {
@@ -62,8 +67,7 @@ function wrapStatement(stmt: D1PreparedStatement, sqlText: string): D1PreparedSt
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver)
       if (prop === 'bind' && typeof value === 'function') {
-        return (...args: unknown[]) =>
-          wrapBoundStatement(value.apply(target, args), sqlText, args)
+        return (...args: unknown[]) => wrapBoundStatement(value.apply(target, args), sqlText, args)
       }
       return typeof value === 'function' ? value.bind(target) : value
     },

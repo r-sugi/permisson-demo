@@ -76,38 +76,182 @@ async function seed() {
   // ─── ユーザー（8件ずつ分割）───
   db.insert(schema.adminUsers)
     .values([
-      { id: 'user-alice', email: 'alice@example.com', passwordHash: pw, tenantId: tenantA, role: 'tenant_owner' },
-      { id: 'user-bob', email: 'bob@example.com', passwordHash: pw, tenantId: tenantA, role: 'tenant_staff' },
-      { id: 'user-grace', email: 'grace@example.com', passwordHash: pw, tenantId: tenantA, role: 'shop_owner' },
-      { id: 'user-henry', email: 'henry@example.com', passwordHash: pw, tenantId: tenantA, role: 'shop_staff' },
-      { id: 'user-eve', email: 'eve@example.com', passwordHash: pw, tenantId: tenantA_basic, role: 'tenant_owner' },
-      { id: 'user-frank', email: 'frank@example.com', passwordHash: pw, tenantId: tenantA_basic, role: 'tenant_staff' },
-      { id: 'user-nora', email: 'nora@example.com', passwordHash: pw, tenantId: tenantA_basic, role: 'shop_owner' },
-      { id: 'user-oliver', email: 'oliver@example.com', passwordHash: pw, tenantId: tenantA_basic, role: 'shop_staff' },
+      {
+        id: 'user-alice',
+        email: 'alice@example.com',
+        passwordHash: pw,
+        tenantId: tenantA,
+        role: 'tenant_owner',
+      },
+      {
+        id: 'user-bob',
+        email: 'bob@example.com',
+        passwordHash: pw,
+        tenantId: tenantA,
+        role: 'tenant_staff',
+      },
+      {
+        id: 'user-grace',
+        email: 'grace@example.com',
+        passwordHash: pw,
+        tenantId: tenantA,
+        role: 'shop_owner',
+      },
+      {
+        id: 'user-henry',
+        email: 'henry@example.com',
+        passwordHash: pw,
+        tenantId: tenantA,
+        role: 'shop_staff',
+      },
+      {
+        id: 'user-eve',
+        email: 'eve@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_basic,
+        role: 'tenant_owner',
+      },
+      {
+        id: 'user-frank',
+        email: 'frank@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_basic,
+        role: 'tenant_staff',
+      },
+      {
+        id: 'user-nora',
+        email: 'nora@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_basic,
+        role: 'shop_owner',
+      },
+      {
+        id: 'user-oliver',
+        email: 'oliver@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_basic,
+        role: 'shop_staff',
+      },
     ])
     .run()
   db.insert(schema.adminUsers)
     .values([
-      { id: 'user-paul', email: 'paul@example.com', passwordHash: pw, tenantId: tenantA_starter, role: 'tenant_owner' },
-      { id: 'user-quinn', email: 'quinn@example.com', passwordHash: pw, tenantId: tenantA_starter, role: 'tenant_staff' },
-      { id: 'user-rachel', email: 'rachel@example.com', passwordHash: pw, tenantId: tenantA_starter, role: 'shop_owner' },
-      { id: 'user-sam', email: 'sam@example.com', passwordHash: pw, tenantId: tenantA_starter, role: 'shop_staff' },
-      { id: 'user-charlie', email: 'charlie@example.com', passwordHash: pw, tenantId: tenantB_basic, role: 'tenant_owner' },
-      { id: 'user-diana', email: 'diana@example.com', passwordHash: pw, tenantId: tenantB_basic, role: 'tenant_staff' },
-      { id: 'user-iris', email: 'iris@example.com', passwordHash: pw, tenantId: tenantB_basic, role: 'shop_owner' },
-      { id: 'user-jack', email: 'jack@example.com', passwordHash: pw, tenantId: tenantB_basic, role: 'shop_staff' },
+      {
+        id: 'user-paul',
+        email: 'paul@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_starter,
+        role: 'tenant_owner',
+      },
+      {
+        id: 'user-quinn',
+        email: 'quinn@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_starter,
+        role: 'tenant_staff',
+      },
+      {
+        id: 'user-rachel',
+        email: 'rachel@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_starter,
+        role: 'shop_owner',
+      },
+      {
+        id: 'user-sam',
+        email: 'sam@example.com',
+        passwordHash: pw,
+        tenantId: tenantA_starter,
+        role: 'shop_staff',
+      },
+      {
+        id: 'user-charlie',
+        email: 'charlie@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_basic,
+        role: 'tenant_owner',
+      },
+      {
+        id: 'user-diana',
+        email: 'diana@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_basic,
+        role: 'tenant_staff',
+      },
+      {
+        id: 'user-iris',
+        email: 'iris@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_basic,
+        role: 'shop_owner',
+      },
+      {
+        id: 'user-jack',
+        email: 'jack@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_basic,
+        role: 'shop_staff',
+      },
     ])
     .run()
   db.insert(schema.adminUsers)
     .values([
-      { id: 'user-tom', email: 'tom@example.com', passwordHash: pw, tenantId: tenantB_pro, role: 'tenant_owner' },
-      { id: 'user-uma', email: 'uma@example.com', passwordHash: pw, tenantId: tenantB_pro, role: 'tenant_staff' },
-      { id: 'user-victor', email: 'victor@example.com', passwordHash: pw, tenantId: tenantB_pro, role: 'shop_owner' },
-      { id: 'user-wendy', email: 'wendy@example.com', passwordHash: pw, tenantId: tenantB_pro, role: 'shop_staff' },
-      { id: 'user-xavier', email: 'xavier@example.com', passwordHash: pw, tenantId: tenantB_starter, role: 'tenant_owner' },
-      { id: 'user-yara', email: 'yara@example.com', passwordHash: pw, tenantId: tenantB_starter, role: 'tenant_staff' },
-      { id: 'user-zoe', email: 'zoe@example.com', passwordHash: pw, tenantId: tenantB_starter, role: 'shop_owner' },
-      { id: 'user-alex', email: 'alex@example.com', passwordHash: pw, tenantId: tenantB_starter, role: 'shop_staff' },
+      {
+        id: 'user-tom',
+        email: 'tom@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_pro,
+        role: 'tenant_owner',
+      },
+      {
+        id: 'user-uma',
+        email: 'uma@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_pro,
+        role: 'tenant_staff',
+      },
+      {
+        id: 'user-victor',
+        email: 'victor@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_pro,
+        role: 'shop_owner',
+      },
+      {
+        id: 'user-wendy',
+        email: 'wendy@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_pro,
+        role: 'shop_staff',
+      },
+      {
+        id: 'user-xavier',
+        email: 'xavier@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_starter,
+        role: 'tenant_owner',
+      },
+      {
+        id: 'user-yara',
+        email: 'yara@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_starter,
+        role: 'tenant_staff',
+      },
+      {
+        id: 'user-zoe',
+        email: 'zoe@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_starter,
+        role: 'shop_owner',
+      },
+      {
+        id: 'user-alex',
+        email: 'alex@example.com',
+        passwordHash: pw,
+        tenantId: tenantB_starter,
+        role: 'shop_staff',
+      },
     ])
     .run()
   console.log('ユーザー 24 件を挿入しました')
@@ -187,10 +331,14 @@ async function seed() {
     }))
     db.insert(schema.customers).values(customers).run()
     db.insert(schema.purchaseHistories)
-      .values(customers.map((c, k) => ({ id: ulid(), customerId: c.id, shopId: shopIdForIndex(i + k) })))
+      .values(
+        customers.map((c, k) => ({ id: ulid(), customerId: c.id, shopId: shopIdForIndex(i + k) })),
+      )
       .run()
     if ((i + CHUNK) % 100_000 === 0 || end === TOTAL_CUSTOMERS) {
-      console.log(`  ${Math.min(i + CHUNK, TOTAL_CUSTOMERS).toLocaleString()} / ${TOTAL_CUSTOMERS.toLocaleString()} 件挿入中...`)
+      console.log(
+        `  ${Math.min(i + CHUNK, TOTAL_CUSTOMERS).toLocaleString()} / ${TOTAL_CUSTOMERS.toLocaleString()} 件挿入中...`,
+      )
     }
   }
   console.log(`顧客 ${TOTAL_CUSTOMERS.toLocaleString()} 件・購買履歴を挿入しました`)

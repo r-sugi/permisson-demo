@@ -56,7 +56,6 @@ function formatLabel(durationMs: number): string {
 /** Rails の SQL ログ行 ` #{name} #{sql}#{binds}` に近い整形 */
 export function logRailsLikeSqlQuery(query: string, params: unknown[], durationMs: number): void {
   const sqlPart = color(query, sqlColor(query), true)
-  const binds =
-    params.length > 0 ? ` ${JSON.stringify(params)}` : ''
+  const binds = params.length > 0 ? ` ${JSON.stringify(params)}` : ''
   console.info(`  ${formatLabel(durationMs)} ${sqlPart}${binds}`)
 }

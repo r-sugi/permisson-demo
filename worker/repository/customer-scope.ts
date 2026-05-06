@@ -128,10 +128,7 @@ class ShopsCustomerScope extends BaseCustomerScope {
           eq(schema.shopAssignments.userId, this.userId),
         ),
       )
-    const idRows = await (cursor
-      ? qb.where(gt(schema.purchaseHistories.customerId, cursor))
-      : qb
-    )
+    const idRows = await (cursor ? qb.where(gt(schema.purchaseHistories.customerId, cursor)) : qb)
       .groupBy(schema.purchaseHistories.customerId)
       .orderBy(asc(schema.purchaseHistories.customerId))
       .limit(limit)
