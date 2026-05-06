@@ -58,6 +58,38 @@ describe('authContextMiddleware', () => {
     })
   })
 
+  it('adminUsers が存在しなければ 404', async () => {
+    vi.spyOn(SubscriptionRepository.prototype, 'findValidByTenantId').mockResolvedValue({
+      id: 'sub',
+      tenantId: 't',
+      plan: 'pro',
+      status: 'active',
+    } as never)
+
+    const mockGet = vi.fn().mockResolvedValue(null)
+    const mockDb = {
+      select: () => ({
+        from: () => ({
+          where: () => ({ get: mockGet }),
+        }),
+      }),
+    }
+
+    const c = makeCtx({
+      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      db: mockDb,
+    })
+    const next = vi.fn(async () => {})
+
+    await expect(authContextMiddleware(c as never, next as never)).rejects.toBeInstanceOf(
+      HTTPException,
+    )
+    await expect(authContextMiddleware(c as never, next as never)).rejects.toMatchObject({
+      status: 404,
+    })
+    expect(next).not.toHaveBeenCalled()
+  })
+
   it('subscription が無効なら 401', async () => {
     vi.spyOn(SubscriptionRepository.prototype, 'findValidByTenantId').mockResolvedValue(
       null as never,

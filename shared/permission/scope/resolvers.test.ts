@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { AuthContext } from '@shared/permission/types'
-import { TenantId, ShopId } from '@shared/permission/types'
+import { TenantId, ShopId, CustomerId } from '@shared/permission/types'
 import type { Repositories } from './resolver-types'
 import {
   resolveTenantAssignment,
@@ -110,6 +110,20 @@ describe('resolveCustomerViaShop', () => {
     expect(await r(repo, auth({ role: 'shop_owner' }))).toBe(true)
   })
 
+  it('shop ロール: shop_staff も allowedByShopAssignment で判定される', async () => {
+    const r = resolveCustomerViaShop('cust-1')
+    const repo = mockRepos({
+      purchaseHistory: {
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: true,
+        }),
+      },
+    })
+    expect(await r(repo, auth({ role: 'shop_staff' }))).toBe(true)
+  })
+
   it('テナントロール: assignment なしでも当該テナントの店舗なら true', async () => {
     const r = resolveCustomerViaShop('cust-1')
     const repo = mockRepos({
@@ -122,6 +136,34 @@ describe('resolveCustomerViaShop', () => {
       },
     })
     expect(await r(repo, auth({ role: 'tenant_owner', tenantId: 'tenant-a' }))).toBe(true)
+  })
+
+  it('テナントロール: tenant_staff も allowedByTenant で判定される', async () => {
+    const r = resolveCustomerViaShop('cust-1')
+    const repo = mockRepos({
+      purchaseHistory: {
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: false,
+        }),
+      },
+    })
+    expect(await r(repo, auth({ role: 'tenant_staff', tenantId: 'tenant-a' }))).toBe(true)
+  })
+
+  it('テナントロール: developer も allowedByTenant で判定される', async () => {
+    const r = resolveCustomerViaShop('cust-1')
+    const repo = mockRepos({
+      purchaseHistory: {
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: false,
+        }),
+      },
+    })
+    expect(await r(repo, auth({ role: 'developer', tenantId: 'tenant-a' }))).toBe(true)
   })
 
   it('テナントロール: 他テナントの店舗に紐づく顧客は false', async () => {
@@ -180,6 +222,16 @@ describe('resolveShopInTenantContext', () => {
     expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(true)
   })
 
+  it('店舗が存在しなければ false（例: 物理削除済み）', async () => {
+    const r = resolveShopInTenantContext(TenantId('tenant-a'), ShopId('shop-1'))
+    const repo = mockRepos({
+      shop: {
+        findById: async () => null,
+      },
+    })
+    expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(false)
+  })
+
   it('URL tenant が JWT と不一致なら false', async () => {
     const r = resolveShopInTenantContext(TenantId('tenant-b'), ShopId('shop-1'))
     const repo = mockRepos({
@@ -208,6 +260,29 @@ describe('useResolver', () => {
     expect(await r(mockRepos({}), auth({ tenantId: 'tenant-b' }))).toBe(false)
   })
 
+  it('shop キーで resolveShopAssignment と同等に動く', async () => {
+    const r = useResolver('shop', { shopId: ShopId('shop-1') })
+    const repo = mockRepos({
+      shopAssignment: {
+        findByUserIdAndShopId: async (uid, sid) =>
+          uid === 'user-1' && sid === 'shop-1' ? { userId: uid, shopId: sid } : null,
+      },
+    })
+    expect(await r(repo, auth())).toBe(true)
+    expect(await r(mockRepos({}), auth())).toBe(false)
+  })
+
+  it('shopViaTenant キーで resolveShopViaTenant と同等に動く', async () => {
+    const r = useResolver('shopViaTenant', { shopId: ShopId('shop-1') })
+    const repo = mockRepos({
+      shop: {
+        findById: async () => ({ tenantId: 'tenant-a' }),
+      },
+    })
+    expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(true)
+    expect(await r(repo, auth({ tenantId: 'tenant-b' }))).toBe(false)
+  })
+
   it('shopInTenant キーで resolveShopInTenantContext と同等に動く', async () => {
     const r = useResolver('shopInTenant', {
       tenantId: TenantId('tenant-a'),
@@ -219,5 +294,19 @@ describe('useResolver', () => {
       },
     })
     expect(await r(repo, auth({ tenantId: 'tenant-a' }))).toBe(true)
+  })
+
+  it('customerViaShop キーで resolveCustomerViaShop と同等に動く', async () => {
+    const r = useResolver('customerViaShop', { customerId: CustomerId('cust-1') })
+    const repo = mockRepos({
+      purchaseHistory: {
+        findByCustomerId: async () => null,
+        evaluateCustomerShopAccess: async () => ({
+          allowedByTenant: true,
+          allowedByShopAssignment: true,
+        }),
+      },
+    })
+    expect(await r(repo, auth({ role: 'shop_owner' }))).toBe(true)
   })
 })
