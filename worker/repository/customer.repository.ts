@@ -26,13 +26,16 @@ export type CustomerRowWithDisplay = CustomerRow & {
   displayName: string
 }
 
-/** `{顧客名}-{テナント名}-{店舗名}` を関連テーブルから SELECT 時に算出 */
+/** `{顧客名} {テナント名}-{店舗名}`（店舗名が `{テナント名} ` で始まる場合は重複を除く）を SELECT 時に算出 */
 const customerWithDisplaySelection = {
   ...getTableColumns(schema.customers),
-  displayName:
-    sql<string>`${schema.customers.name} || '-' || ${schema.tenants.name} || '-' || ${schema.shops.name}`
-      .mapWith(String)
-      .as('displayName'),
+  displayName: sql<string>`${schema.customers.name} || ' ' || ${schema.tenants.name} || '-' || CASE WHEN ${
+    schema.shops.name
+  } LIKE ${schema.tenants.name} || ' %' THEN SUBSTR(${schema.shops.name}, LENGTH(${schema.tenants.name}) + 2) ELSE ${
+    schema.shops.name
+  } END`
+    .mapWith(String)
+    .as('displayName'),
 } satisfies Record<string, unknown>
 
 /** スコープ WHERE 付きの一覧用クエリ（customer-scope から利用） */
