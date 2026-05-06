@@ -1,6 +1,7 @@
 import { env, SELF } from 'cloudflare:test'
 import { drizzle } from 'drizzle-orm/d1'
 import { sign } from 'hono/jwt'
+import { ulid } from 'ulidx'
 import { schema } from '../rdb/index'
 import type { Role } from '@shared/permission/types'
 
@@ -97,24 +98,51 @@ export async function resetDb() {
     { id: 'sa-kate',  userId: TEST_USER_KATE,  shopId: TEST_SHOP_G1_ID },
   ]).run()
 
-  // 顧客 + purchase_histories（スコープテスト用）
-  await db.insert(schema.customers).values([
-    { id: 'cust-s1-1', name: '田中一郎', email: 'tanaka@test.com', tag: 'VIP', memo: null },
-    { id: 'cust-s1-2', name: '佐藤花子', email: 'sato@test.com', tag: null, memo: null },
-    { id: 'cust-s2-1', name: '鈴木太郎', email: 'suzuki@test.com', tag: null, memo: null },
-    { id: 'cust-f1-1', name: '伊藤さくら', email: 'ito@test.com', tag: 'VIP', memo: null },
-    { id: 'cust-f1-2', name: '山本浩介', email: 'yamamoto@test.com', tag: null, memo: null },
-    { id: 'cust-g1-1', name: '小林悠介', email: 'kobayashi@test.com', tag: null, memo: null },
-  ]).run()
+  // 顧客（固定6件 + バルクで合計 10,000）+ purchase_histories
+  const fixtureCustomers = [
+    { id: 'cust-s1-1', name: '田中一郎', email: 'tanaka@test.com', tag: 'VIP', memo: null as string | null },
+    { id: 'cust-s1-2', name: '佐藤花子', email: 'sato@test.com', tag: null, memo: null as string | null },
+    { id: 'cust-s2-1', name: '鈴木太郎', email: 'suzuki@test.com', tag: null, memo: null as string | null },
+    { id: 'cust-f1-1', name: '伊藤さくら', email: 'ito@test.com', tag: 'VIP', memo: null as string | null },
+    { id: 'cust-f1-2', name: '山本浩介', email: 'yamamoto@test.com', tag: null, memo: null as string | null },
+    { id: 'cust-g1-1', name: '小林悠介', email: 'kobayashi@test.com', tag: null, memo: null as string | null },
+  ] as const
 
-  await db.insert(schema.purchaseHistories).values([
+  const BULK_TOTAL = 10_000 - fixtureCustomers.length
+  const sShops = [TEST_SHOP_S1_ID, 'test-shop-s2'] as const
+  const bulkCustomers = Array.from({ length: BULK_TOTAL }, (_, i) => ({
+    id: ulid(),
+    name: `バルク顧客${i}`,
+    email: `bulk-${i}@test.com`,
+    tag: null as string | null,
+    memo: null as string | null,
+  }))
+
+  /** D1 はステートメントあたり ~100 バインド程度（customers は実質 5 列×行） */
+  const CUSTOMER_INSERT_CHUNK = 20
+  for (let i = 0; i < bulkCustomers.length; i += CUSTOMER_INSERT_CHUNK) {
+    await db.insert(schema.customers).values(bulkCustomers.slice(i, i + CUSTOMER_INSERT_CHUNK)).run()
+  }
+  await db.insert(schema.customers).values([...fixtureCustomers]).run()
+
+  const fixturePh = [
     { id: 'ph-1', customerId: 'cust-s1-1', shopId: TEST_SHOP_S1_ID },
     { id: 'ph-2', customerId: 'cust-s1-2', shopId: TEST_SHOP_S1_ID },
     { id: 'ph-3', customerId: 'cust-s2-1', shopId: 'test-shop-s2' },
     { id: 'ph-4', customerId: 'cust-f1-1', shopId: TEST_SHOP_F1_ID },
     { id: 'ph-5', customerId: 'cust-f1-2', shopId: TEST_SHOP_F1_ID },
     { id: 'ph-6', customerId: 'cust-g1-1', shopId: TEST_SHOP_G1_ID },
-  ]).run()
+  ]
+  const bulkPh = bulkCustomers.map((c, i) => ({
+    id: ulid(),
+    customerId: c.id,
+    shopId: sShops[i % sShops.length]!,
+  }))
+  const PH_INSERT_CHUNK = 30
+  for (let i = 0; i < bulkPh.length; i += PH_INSERT_CHUNK) {
+    await db.insert(schema.purchaseHistories).values(bulkPh.slice(i, i + PH_INSERT_CHUNK)).run()
+  }
+  await db.insert(schema.purchaseHistories).values(fixturePh).run()
 
   return db
 }

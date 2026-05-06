@@ -25,8 +25,21 @@ const PANEL_ITEMS = [
   { label: 'CSV出力', target: 'customer' as const, action: 'exportCsv' },
 ]
 
+/** API の既定と揃えた 1 ページあたり件数（カーソルページネーション） */
+const PAGE_SIZE = 20
+
+type CustomerPage = {
+  items: Customer[]
+  nextCursor: string | null
+}
+
 export function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  /** 現在のページ取得時にクエリへ渡した cursor（先頭ページは null） */
+  const [pageRequestCursor, setPageRequestCursor] = useState<string | null>(null)
+  /** 「戻る」用：各ページのリクエスト cursor を積む */
+  const [cursorBackStack, setCursorBackStack] = useState<(string | null)[]>([])
   const [shops, setShops] = useState<Shop[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -40,14 +53,24 @@ export function CustomersPage() {
   const [exporting, setExporting] = useState(false)
   const [exportResult, setExportResult] = useState<string | null>(null)
 
-  const fetchCustomers = useCallback(async () => {
+  const fetchPage = useCallback(async (requestCursor: string | null, resetPagination: boolean) => {
     setLoading(true)
     setError(null)
     setErrorStatus(null)
     try {
-      const res = await apiClient.api.customers.$get()
-      const data = await parseJson<Customer[]>(res)
-      setCustomers(data)
+      const res = await apiClient.api.customers.$get({
+        query: {
+          limit: String(PAGE_SIZE),
+          ...(requestCursor ? { cursor: requestCursor } : {}),
+        },
+      })
+      const data = await parseJson<CustomerPage>(res)
+      setCustomers(data.items)
+      setNextCursor(data.nextCursor)
+      setPageRequestCursor(requestCursor)
+      if (resetPagination) {
+        setCursorBackStack([])
+      }
     } catch (err) {
       const e = err as Error & { status?: number }
       setError(e.message)
@@ -58,8 +81,25 @@ export function CustomersPage() {
   }, [])
 
   useEffect(() => {
-    void fetchCustomers()
-  }, [fetchCustomers, refreshKey])
+    void fetchPage(null, true)
+  }, [fetchPage, refreshKey])
+
+  const handleNextPage = async () => {
+    if (!nextCursor) return
+    setCursorBackStack((s) => [...s, pageRequestCursor])
+    await fetchPage(nextCursor, false)
+  }
+
+  const handlePrevPage = async () => {
+    if (cursorBackStack.length === 0) return
+    const prevRequestCursor = cursorBackStack[cursorBackStack.length - 1]!
+    setCursorBackStack((s) => s.slice(0, -1))
+    await fetchPage(prevRequestCursor, false)
+  }
+
+  const handleFirstPage = async () => {
+    await fetchPage(null, true)
+  }
 
   useEffect(() => {
     apiClient.api.shops.$get().then(async (res) => {
@@ -348,9 +388,40 @@ export function CustomersPage() {
               )}
             </tbody>
           </table>
-          <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t border-gray-200">
-            {customers.length}件
-            {customers.length > 0 && ' （スコープ内の顧客のみ表示）'}
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+            <span>
+              本ページ <strong className="text-gray-800">{customers.length}</strong> 件
+              {customers.length > 0 && ' （スコープ内・カーソル順）'}
+            </span>
+            {nextCursor !== null && (
+              <span className="text-indigo-600">次のページがあります</span>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={() => void handleFirstPage()}
+                disabled={loading || (pageRequestCursor === null && cursorBackStack.length === 0)}
+                className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-white"
+              >
+                先頭へ
+              </button>
+              <button
+                type="button"
+                onClick={() => void handlePrevPage()}
+                disabled={loading || cursorBackStack.length === 0}
+                className="px-3 py-1 rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-white"
+              >
+                前へ
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleNextPage()}
+                disabled={loading || nextCursor === null}
+                className="px-3 py-1 rounded border border-indigo-300 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 disabled:opacity-40 disabled:hover:bg-indigo-50"
+              >
+                次へ
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

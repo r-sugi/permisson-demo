@@ -7,6 +7,8 @@ import type { CustomerRow } from '../rdb/models/customers'
 import { UserRelationRepository } from './user-relation.repository'
 import { createCustomerScope } from './customer-scope'
 
+const EXPORT_PAGE_SIZE = 500
+
 export class CustomerRepository {
   private scopeCache?: CustomerScope
 
@@ -28,10 +30,20 @@ export class CustomerRepository {
     return this.scopeCache
   }
 
-  async findAll(): Promise<CustomerRow[]> {
+  /**
+   * カーソルベースの1ページ。`pageLimit` 件まで返し、次ページがあるとき `nextCursor` に最終行の id を入れる。
+   * 内部で `pageLimit + 1` 件取得して有無を判定する。
+   */
+  async findPage(
+    cursor: string | null,
+    pageLimit: number,
+  ): Promise<{ items: CustomerRow[]; nextCursor: string | null }> {
     const scope = await this.resolveScope()
-    const rows = await scope.findAllCustomerRows()
-    return rows as CustomerRow[]
+    const rows = (await scope.findCustomerRows(cursor, pageLimit + 1)) as CustomerRow[]
+    const hasMore = rows.length > pageLimit
+    const items = hasMore ? rows.slice(0, pageLimit) : rows
+    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1]!.id : null
+    return { items, nextCursor }
   }
 
   async findById(customerId: string) {
@@ -77,6 +89,14 @@ export class CustomerRepository {
   }
 
   async exportAll() {
-    return this.findAll()
+    const all: CustomerRow[] = []
+    let cursor: string | null = null
+    for (;;) {
+      const { items, nextCursor } = await this.findPage(cursor, EXPORT_PAGE_SIZE)
+      all.push(...items)
+      if (nextCursor === null) break
+      cursor = nextCursor
+    }
+    return all
   }
 }

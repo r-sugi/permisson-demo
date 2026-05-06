@@ -8,7 +8,7 @@ import { schema } from '../rdb/index'
 /** テナント紐付け or 店舗割当（複数行可）に基づくスコープ解決 */
 export type UserScopeResolution =
   | { kind: 'tenant'; tenantId: string }
-  | { kind: 'shops'; shopIds: string[] }
+  | { kind: 'shops'; userId: string }
 
 /** admin_users / shop_assignments を参照してユーザの ReBAC スコープを返す。 */
 export class UserRelationRepository {
@@ -28,16 +28,17 @@ export class UserRelationRepository {
       return { kind: 'tenant', tenantId: user.tenantId }
     }
 
-    const assignments = await this.db
+    const hasAssignment = await this.db
       .select({ shopId: schema.shopAssignments.shopId })
       .from(schema.shopAssignments)
       .where(eq(schema.shopAssignments.userId, userId))
-      .all()
+      .limit(1)
+      .get()
 
-    if (assignments.length === 0) {
+    if (!hasAssignment) {
       throw new HTTPException(403, { message: 'User has no assignment' })
     }
 
-    return { kind: 'shops', shopIds: assignments.map((a) => a.shopId) }
+    return { kind: 'shops', userId }
   }
 }

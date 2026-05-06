@@ -15,8 +15,8 @@ export class CustomerUseCase {
     private readonly auth: AuthContext,
   ) {}
 
-  async listCustomers() {
-    return this.customerRepo.findAll()
+  async listCustomers(cursor: string | null | undefined, limit: number) {
+    return this.customerRepo.findPage(cursor ?? null, limit)
   }
 
   async getCustomer(customerId: string) {

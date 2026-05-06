@@ -30,7 +30,7 @@ export class ShopAccessRepository {
       this.scopeCache =
         resolution.kind === 'tenant'
           ? new TenantShopScope(resolution.tenantId, this.shopRepo)
-          : new AssignedShopsScope(resolution.shopIds, this.shopRepo)
+          : new AssignedShopsScope(resolution.userId, this.shopRepo)
     }
     return this.scopeCache
   }

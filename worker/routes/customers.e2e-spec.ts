@@ -31,31 +31,36 @@ async function expectPermissionDenied(res: Response, expectedSuffix: string) {
   expect(message).toContain(`Permission denied: ${expectedSuffix}`)
 }
 
+type CustomerListJson = { items: { id: string }[]; nextCursor: string | null }
+
 describe('GET /api/customers - スコープ解決', () => {
   beforeEach(() => resetDb())
 
-  it('tenant_owner(S社/pro): テナント内の全顧客3件を取得（shopS1: 2件 + shopS2: 1件）', async () => {
+  it('tenant_owner(S社/pro): 1ページ目は20件・次ページあり（スコープ内は万件規模のバルクを含む）', async () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
-    expect(body).toHaveLength(3) // cust-s1-1, cust-s1-2, cust-s2-1
+    const body = (await res.json()) as CustomerListJson
+    expect(body.items).toHaveLength(20)
+    expect(body.nextCursor).not.toBeNull()
   })
 
-  it('tenant_staff(S社/pro): tenant_owner と同一スコープ', async () => {
+  it('tenant_staff(S社/pro): tenant_owner と同様にページネーション応答', async () => {
     const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
-    expect(body).toHaveLength(3)
+    const body = (await res.json()) as CustomerListJson
+    expect(body.items).toHaveLength(20)
+    expect(body.nextCursor).not.toBeNull()
   })
 
-  it('shop_owner(S社/渋谷店/pro): 担当店舗の顧客のみ2件', async () => {
+  it('shop_owner(S社/渋谷店/pro): 担当店舗スコープで1ページ目20件・次ページあり', async () => {
     const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
-    expect(body).toHaveLength(2) // cust-s1-1, cust-s1-2
+    const body = (await res.json()) as CustomerListJson
+    expect(body.items).toHaveLength(20)
+    expect(body.nextCursor).not.toBeNull()
   })
 
   it('shop_staff: 403 (customer.read = false)', async () => {
@@ -64,12 +69,14 @@ describe('GET /api/customers - スコープ解決', () => {
     await expectPermissionDenied(res, 'customer.read')
   })
 
-  it('tenant_owner(G社/starter): 別テナントの顧客1件のみ', async () => {
+  it('tenant_owner(G社/starter): 別テナントの顧客1件のみ（次ページなし）', async () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
     const res = await authedFetch('/api/customers', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
-    expect(body).toHaveLength(1) // cust-g1-1
+    const body = (await res.json()) as CustomerListJson
+    expect(body.items).toHaveLength(1)
+    expect(body.items[0]?.id).toBe('cust-g1-1')
+    expect(body.nextCursor).toBeNull()
   })
 
   it('401: JWTなしで認証エラー', async () => {

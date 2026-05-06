@@ -1,13 +1,13 @@
 import { MyAppError } from '@shared/error'
 
 export interface CustomerScope {
-  findAllCustomerRows(): Promise<unknown[]>
+  findCustomerRows(cursor: string | null, limit: number): Promise<unknown[]>
   isCustomerInScope(customerId: string): Promise<boolean>
   validateCustomerIds(customerIds: string[]): Promise<string[]>
 }
 
 export abstract class BaseCustomerScope implements CustomerScope {
-  abstract findAllCustomerRows(): Promise<unknown[]>
+  abstract findCustomerRows(cursor: string | null, limit: number): Promise<unknown[]>
   abstract isCustomerInScope(customerId: string): Promise<boolean>
   abstract filterAccessibleIds(customerIds: string[]): Promise<string[]>
 

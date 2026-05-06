@@ -252,46 +252,52 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
       ])
       .run()
 
-    // ─── 顧客 ───
+    // ─── 顧客（合計 10,000 件）───
+    const TARGET_CUSTOMERS = 10_000
+    const namedCustomers = [
+      { name: '田中 一郎', email: 'tanaka1@example.com', tag: 'VIP', memo: 'A社常連' },
+      { name: '佐藤 花子', email: 'sato@example.com', tag: null, memo: null },
+      { name: '鈴木 太郎', email: 'suzuki@example.com', tag: 'リピーター', memo: null },
+      { name: '高橋 美咲', email: 'takahashi@example.com', tag: null, memo: 'クーポン利用済み' },
+      { name: '伊藤 さくら', email: 'ito@example.com', tag: 'VIP', memo: null },
+      { name: '山本 浩介', email: 'yamamoto@example.com', tag: null, memo: null },
+      { name: '中村 麻衣', email: 'nakamura@example.com', tag: null, memo: null },
+      { name: '小林 悠介', email: 'kobayashi@example.com', tag: 'VIP', memo: 'B社常連' },
+      { name: '加藤 のぞみ', email: 'kato@example.com', tag: null, memo: null },
+      { name: '吉田 隼人', email: 'yoshida@example.com', tag: 'リピーター', memo: null },
+      { name: '山田 あかり', email: 'yamada@example.com', tag: null, memo: null },
+      { name: '松本 大輝', email: 'matsumoto@example.com', tag: null, memo: null },
+      { name: '井上 莉奈', email: 'inoue@example.com', tag: null, memo: null },
+      { name: '木村 直樹', email: 'kimura@example.com', tag: null, memo: null },
+    ].map((row) => ({ id: ulid(), ...row }))
+
     const customers = [
-      // A社 shopA1 (4件)
-      { id: ulid(), name: '田中 一郎', email: 'tanaka1@example.com', tag: 'VIP', memo: 'A社常連' },
-      { id: ulid(), name: '佐藤 花子', email: 'sato@example.com', tag: null, memo: null },
-      { id: ulid(), name: '鈴木 太郎', email: 'suzuki@example.com', tag: 'リピーター', memo: null },
-      { id: ulid(), name: '高橋 美咲', email: 'takahashi@example.com', tag: null, memo: 'クーポン利用済み' },
-      // A社 shopA2 (3件)
-      { id: ulid(), name: '伊藤 さくら', email: 'ito@example.com', tag: 'VIP', memo: null },
-      { id: ulid(), name: '山本 浩介', email: 'yamamoto@example.com', tag: null, memo: null },
-      { id: ulid(), name: '中村 麻衣', email: 'nakamura@example.com', tag: null, memo: null },
-      // B社 shopB1 (4件)
-      { id: ulid(), name: '小林 悠介', email: 'kobayashi@example.com', tag: 'VIP', memo: 'B社常連' },
-      { id: ulid(), name: '加藤 のぞみ', email: 'kato@example.com', tag: null, memo: null },
-      { id: ulid(), name: '吉田 隼人', email: 'yoshida@example.com', tag: 'リピーター', memo: null },
-      { id: ulid(), name: '山田 あかり', email: 'yamada@example.com', tag: null, memo: null },
-      // B社 shopB2 (3件)
-      { id: ulid(), name: '松本 大輝', email: 'matsumoto@example.com', tag: null, memo: null },
-      { id: ulid(), name: '井上 莉奈', email: 'inoue@example.com', tag: null, memo: null },
-      { id: ulid(), name: '木村 直樹', email: 'kimura@example.com', tag: null, memo: null },
-    ]
-
-    await db.insert(schema.customers).values(customers).run()
-
-    // ─── purchase_histories ───
-    const shopCustomerMap: Array<[string, number[]]> = [
-      [shopA1, [0, 1, 2, 3]],
-      [shopA2, [4, 5, 6]],
-      [shopB1, [7, 8, 9, 10]],
-      [shopB2, [11, 12, 13]],
-    ]
-
-    const purchaseValues = shopCustomerMap.flatMap(([shopId, customerIndices]) =>
-      customerIndices.map((i) => ({
+      ...namedCustomers,
+      ...Array.from({ length: TARGET_CUSTOMERS - namedCustomers.length }, (_, i) => ({
         id: ulid(),
-        customerId: customers[i].id,
-        shopId,
+        name: `顧客 ${i + namedCustomers.length}`,
+        email: `customer-${i + namedCustomers.length}@example.com`,
+        tag: null as string | null,
+        memo: null as string | null,
       })),
-    )
-    await db.insert(schema.purchaseHistories).values(purchaseValues).run()
+    ]
+
+    const CUSTOMER_SEED_CHUNK = 20
+    const PH_SEED_CHUNK = 30
+    for (let i = 0; i < customers.length; i += CUSTOMER_SEED_CHUNK) {
+      await db.insert(schema.customers).values(customers.slice(i, i + CUSTOMER_SEED_CHUNK)).run()
+    }
+
+    // ─── purchase_histories（各顧客1件、店舗はロービン）───
+    const shopPool = [shopA1, shopA2, shopB1, shopB2]
+    const purchaseValues = customers.map((c, i) => ({
+      id: ulid(),
+      customerId: c.id,
+      shopId: shopPool[i % shopPool.length]!,
+    }))
+    for (let i = 0; i < purchaseValues.length; i += PH_SEED_CHUNK) {
+      await db.insert(schema.purchaseHistories).values(purchaseValues.slice(i, i + PH_SEED_CHUNK)).run()
+    }
 
     return c.json({
       message: 'Seed data reset successfully',

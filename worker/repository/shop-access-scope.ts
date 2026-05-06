@@ -19,11 +19,11 @@ export class TenantShopScope implements ShopScope {
 /** shop_owner / shop_staff など複数 shop_assignments に対応 */
 export class AssignedShopsScope implements ShopScope {
   constructor(
-    private readonly shopIds: string[],
+    private readonly userId: string,
     private readonly shops: ShopRepository,
   ) {}
 
   listAccessible(): Promise<ShopRow[]> {
-    return this.shops.listActiveByShopIds(this.shopIds)
+    return this.shops.listAssignedShopsForUser(this.userId)
   }
 }

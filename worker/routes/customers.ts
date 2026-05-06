@@ -8,6 +8,11 @@ import { authorize } from '../middleware/authorize'
 
 // Gate2 relation: 単一リソース ID または POST body の shopId。一覧・エクスポートは CustomerRepository のスコープに委ねる。
 
+const customerListQuerySchema = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+})
+
 const customerPostJsonSchema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
@@ -34,13 +39,15 @@ type CustomerIdInput = {
 
 export const customerRoutes = new Hono<HonoEnv>()
 
-  // GET /api/customers - 顧客一覧（スコープ解決済み）
+  // GET /api/customers - 顧客一覧（スコープ解決済み・カーソルページネーション）
   .get(
     '/',
     authorize({ policy: { target: 'customer', action: 'read' } }),
+    zValidator('query', customerListQuerySchema),
     async (c) => {
-      const customers = await c.get('useCase').customer.listCustomers()
-      return c.json(customers)
+      const q = c.req.valid('query')
+      const page = await c.get('useCase').customer.listCustomers(q.cursor ?? null, q.limit)
+      return c.json(page)
     },
   )
 
