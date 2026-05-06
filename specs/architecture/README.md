@@ -6,6 +6,8 @@
 
 - [`specs/changes/20260505_add_rebac_pbac.md`](../changes/20260505_add_rebac_pbac.md)
 
+**実装スナップショット（AS-IS、ファイル名が基準日）**: [`specs/as-is/20260506_as-is.md`](../as-is/20260506_as-is.md)
+
 実装とドキュメントが食い違う場合は、リポジトリ上のソースコードを正とします。
 
 ## 推奨読書順
