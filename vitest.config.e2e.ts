@@ -15,6 +15,7 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             JWT_SECRET: 'test-secret-do-not-use-in-production',
+            SEED_CUSTOMER_COUNT: '10000',
           },
         },
       }),

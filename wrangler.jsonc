@@ -26,5 +26,10 @@
   // JWT_SECRET is injected via .dev.vars for local development
   "secrets": {
     "required": ["JWT_SECRET"]
+  },
+
+  // E2E は vitest の bindings で SEED_CUSTOMER_COUNT を上書きして短時間に抑える
+  "vars": {
+    "SEED_CUSTOMER_COUNT": "1000000"
   }
 }

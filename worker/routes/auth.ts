@@ -1,15 +1,16 @@
-import { Hono } from 'hono'
-import { sign } from 'hono/jwt'
 import { zValidator } from '@hono/zod-validator'
+import { buildPermissionsMap } from '@shared/permission/permissions'
+import { isTenantAssignmentRole } from '@shared/permission/scope/types'
+import type { Role } from '@shared/permission/types'
+import { eq } from 'drizzle-orm'
+import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
+import { sign } from 'hono/jwt'
 import { ulid } from 'ulidx'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
-import { HTTPException } from 'hono/http-exception'
-import type { HonoEnv } from '../type'
 import { schema } from '../rdb/index'
-import type { Role } from '@shared/permission/types'
-import { isTenantAssignmentRole } from '@shared/permission/scope/types'
-import { buildPermissionsMap } from '@shared/permission/permissions'
+import type { HonoEnv } from '../type'
+
 // ─────────────────────────────────────────────
 // パスワードハッシュ（Web Crypto API）
 // ─────────────────────────────────────────────
@@ -24,6 +25,15 @@ async function hashPassword(password: string): Promise<string> {
 
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return (await hashPassword(password)) === hash
+}
+
+const DEFAULT_SEED_CUSTOMERS = 1_000_000
+
+function seedCustomerTargetFromEnv(countBinding: string | undefined): number {
+  if (countBinding === undefined || countBinding === '') return DEFAULT_SEED_CUSTOMERS
+  const n = Number.parseInt(countBinding, 10)
+  if (!Number.isFinite(n) || n < 14) return DEFAULT_SEED_CUSTOMERS
+  return n
 }
 
 // ─────────────────────────────────────────────
@@ -93,6 +103,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
   // POST /api/auth/seed（開発用シードデータリセット）
   .post('/seed', async (c) => {
     const db = c.get('db')
+    const TARGET_CUSTOMERS = seedCustomerTargetFromEnv(c.env.SEED_CUSTOMER_COUNT)
 
     // 既存データクリア（FK順）
     await db.delete(schema.purchaseHistories).run()
@@ -404,9 +415,8 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
       ])
       .run()
 
-    // ─── 顧客（合計 10,000 件）───
-    const TARGET_CUSTOMERS = 10_000
-    const namedCustomers = [
+    // ─── 顧客（既定 1,000,000 件・顧客インデックス前半は A 社店舗、後半は B 社店舗）───
+    const namedTemplates = [
       { name: '田中 一郎', email: 'tanaka1@example.com', tag: 'VIP', memo: 'A社常連' },
       { name: '佐藤 花子', email: 'sato@example.com', tag: null, memo: null },
       { name: '鈴木 太郎', email: 'suzuki@example.com', tag: 'リピーター', memo: null },
@@ -421,44 +431,72 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
       { name: '松本 大輝', email: 'matsumoto@example.com', tag: null, memo: null },
       { name: '井上 莉奈', email: 'inoue@example.com', tag: null, memo: null },
       { name: '木村 直樹', email: 'kimura@example.com', tag: null, memo: null },
-    ].map((row) => ({ id: ulid(), ...row }))
+    ] as const
 
-    const customers = [
-      ...namedCustomers,
-      ...Array.from({ length: TARGET_CUSTOMERS - namedCustomers.length }, (_, i) => ({
-        id: ulid(),
-        name: `顧客 ${i + namedCustomers.length}`,
-        email: `customer-${i + namedCustomers.length}@example.com`,
-        tag: null as string | null,
-        memo: null as string | null,
-      })),
-    ]
+    const namedCustomers = namedTemplates.map((row) => ({
+      id: ulid(),
+      name: row.name,
+      email: row.email,
+      tag: row.tag,
+      memo: row.memo,
+    }))
 
-    const CUSTOMER_SEED_CHUNK = 20
-    const PH_SEED_CHUNK = 30
-    for (let i = 0; i < customers.length; i += CUSTOMER_SEED_CHUNK) {
-      await db
-        .insert(schema.customers)
-        .values(customers.slice(i, i + CUSTOMER_SEED_CHUNK))
-        .run()
+    const aShops = [shopA1, shopA2] as const
+    const bShops = [shopB1, shopB2] as const
+    const halfPoint = Math.floor(TARGET_CUSTOMERS / 2)
+
+    const shopIdForCustomerIndex = (index: number): string => {
+      const pool = index < halfPoint ? aShops : bShops
+      const shopId = pool[index % 2]
+      if (shopId === undefined) throw new Error('shop pool is empty')
+      return shopId
     }
 
-    // ─── purchase_histories（各顧客1件、店舗はロービン）───
-    const shopPool = [shopA1, shopA2, shopB1, shopB2]
-    const purchaseValues = customers.map((c, i) => {
-      const shopId = shopPool[i % shopPool.length]
-      if (shopId === undefined) throw new Error('shopPool is empty')
-      return {
-        id: ulid(),
-        customerId: c.id,
-        shopId,
+    // D1 はステートメントあたりの変数数に厳しい上限がある（100 行×列だと too many SQL variables）
+    const CUSTOMER_SEED_CHUNK = 20
+    await db.insert(schema.customers).values(namedCustomers).run()
+    await db
+      .insert(schema.purchaseHistories)
+      .values(
+        namedCustomers.map((row, index) => ({
+          id: ulid(),
+          customerId: row.id,
+          shopId: shopIdForCustomerIndex(index),
+        })),
+      )
+      .run()
+
+    for (
+      let start = namedCustomers.length;
+      start < TARGET_CUSTOMERS;
+      start += CUSTOMER_SEED_CHUNK
+    ) {
+      const end = Math.min(start + CUSTOMER_SEED_CHUNK, TARGET_CUSTOMERS)
+      const customerChunk: {
+        id: string
+        name: string
+        email: string
+        tag: string | null
+        memo: string | null
+      }[] = []
+      const phChunk: { id: string; customerId: string; shopId: string }[] = []
+      for (let i = start; i < end; i++) {
+        const id = ulid()
+        customerChunk.push({
+          id,
+          name: `顧客 ${i}`,
+          email: `customer-${i}@example.com`,
+          tag: null,
+          memo: null,
+        })
+        phChunk.push({
+          id: ulid(),
+          customerId: id,
+          shopId: shopIdForCustomerIndex(i),
+        })
       }
-    })
-    for (let i = 0; i < purchaseValues.length; i += PH_SEED_CHUNK) {
-      await db
-        .insert(schema.purchaseHistories)
-        .values(purchaseValues.slice(i, i + PH_SEED_CHUNK))
-        .run()
+      await db.insert(schema.customers).values(customerChunk).run()
+      await db.insert(schema.purchaseHistories).values(phChunk).run()
     }
 
     return c.json({

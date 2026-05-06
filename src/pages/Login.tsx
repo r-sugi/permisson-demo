@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePermissionContext } from '@/providers/permission/permissionContext'
 import { apiClient, parseJson } from '@/lib/apiClient'
+import { usePermissionContext } from '@/providers/permission/permissionContext'
 
 const SEED_USERS = [
   // A社(pro)
@@ -321,6 +321,9 @@ export function LoginPage() {
               )}
               <p className="mt-2 text-xs text-gray-400">
                 ユーザーをクリックすると即座にログインします。データが壊れた場合は上のボタンでリセットしてください。
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                なお、リセットでは固定で A社・B社それぞれ50万件ずつ顧客データが生成されます。
               </p>
               {error && (
                 <p className="mt-2 text-red-600 text-xs bg-red-50 rounded px-3 py-2">{error}</p>
