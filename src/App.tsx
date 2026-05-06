@@ -9,7 +9,12 @@ import { Layout } from '@/pages/Layout'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { me, loading } = usePermissionContext()
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">読み込み中...</div>
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        読み込み中...
+      </div>
+    )
   if (!me) return <Navigate to="/login" replace />
   return <>{children}</>
 }

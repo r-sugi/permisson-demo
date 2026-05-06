@@ -121,11 +121,7 @@ export const customerRoutes = new Hono<HonoEnv>()
   )
 
   // GET /api/customers/export - CSV エクスポート（プラン制御）
-  .get(
-    '/export',
-    authorize({ policy: { target: 'customer', action: 'exportCsv' } }),
-    async (c) => {
-      const customers = await c.get('useCase').customer.exportCsv()
-      return c.json({ customers, exportedAt: new Date().toISOString(), count: customers.length })
-    },
-  )
+  .get('/export', authorize({ policy: { target: 'customer', action: 'exportCsv' } }), async (c) => {
+    const customers = await c.get('useCase').customer.exportCsv()
+    return c.json({ customers, exportedAt: new Date().toISOString(), count: customers.length })
+  })

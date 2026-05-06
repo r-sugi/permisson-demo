@@ -1,6 +1,6 @@
 import type { ShopRow } from '../rdb/models/shops'
-import { ShopRepository } from './shop.repository'
-import { UserRelationRepository } from './user-relation.repository'
+import type { ShopRepository } from './shop.repository'
+import type { UserRelationRepository } from './user-relation.repository'
 import { AssignedShopsScope, TenantShopScope, type ShopScope } from './shop-access-scope'
 
 /**

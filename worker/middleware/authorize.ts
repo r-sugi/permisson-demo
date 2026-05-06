@@ -10,6 +10,7 @@ import {
   buildPermissionDeniedMessage,
 } from '@shared/permission/policy/context'
 
+// biome-ignore lint/complexity/noBannedTypes: Hono の既定 Input（空オブジェクト）はフレームワーク慣例
 type AuthorizeOptions<I extends Input = {}> = {
   policy?: PolicyOption
   /** リクエストごとに URL 等から Resolver を組み立てる（Hono の Context が必要なため） */
@@ -18,6 +19,7 @@ type AuthorizeOptions<I extends Input = {}> = {
   }
 }
 
+// biome-ignore lint/complexity/noBannedTypes: 同上
 export function authorize<I extends Input = {}>(options: AuthorizeOptions<I>) {
   return createMiddleware<HonoEnv, string, I>(async (c, next) => {
     const auth = c.get('auth') as AuthContext

@@ -7,7 +7,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!package-lock.json", "!!**/dist", "!!**/.wrangler", "!!**/.cursor"],
+    "includes": [
+      "**",
+      "!package-lock.json",
+      "!**/worker/rdb/migrations",
+      "!!**/dist",
+      "!!**/.wrangler",
+      "!!**/.cursor"
+    ],
     "ignoreUnknown": true
   },
   "formatter": {

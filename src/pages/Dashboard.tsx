@@ -20,34 +20,96 @@ export function DashboardPage() {
 
   const rows: PermissionRow[] = [
     // ロール依存
-    { category: '顧客管理', action: 'read',      label: '顧客閲覧', granted: p.customer.read,          dependency: 'role' },
-    { category: '顧客管理', action: 'create',    label: '顧客作成', granted: p.customer.create,        dependency: 'role' },
-    { category: '顧客管理', action: 'update',    label: '顧客更新', granted: p.customer.update,        dependency: 'role' },
-    { category: '顧客管理', action: 'delete',    label: '顧客削除', granted: p.customer.delete,        dependency: 'role' },
-    { category: '店舗設定', action: 'createShop', label: '店舗作成', granted: p.settings.createShop,  dependency: 'role' },
-    { category: '店舗設定', action: 'updateShop', label: '店舗更新', granted: p.settings.updateShop,  dependency: 'role' },
-    { category: '店舗設定', action: 'deleteShop', label: '店舗削除', granted: p.settings.deleteShop,  dependency: 'role' },
-    { category: '店舗',     action: 'read',      label: '店舗閲覧', granted: p.shop.read,              dependency: 'role' },
+    {
+      category: '顧客管理',
+      action: 'read',
+      label: '顧客閲覧',
+      granted: p.customer.read,
+      dependency: 'role',
+    },
+    {
+      category: '顧客管理',
+      action: 'create',
+      label: '顧客作成',
+      granted: p.customer.create,
+      dependency: 'role',
+    },
+    {
+      category: '顧客管理',
+      action: 'update',
+      label: '顧客更新',
+      granted: p.customer.update,
+      dependency: 'role',
+    },
+    {
+      category: '顧客管理',
+      action: 'delete',
+      label: '顧客削除',
+      granted: p.customer.delete,
+      dependency: 'role',
+    },
+    {
+      category: '店舗設定',
+      action: 'createShop',
+      label: '店舗作成',
+      granted: p.settings.createShop,
+      dependency: 'role',
+    },
+    {
+      category: '店舗設定',
+      action: 'updateShop',
+      label: '店舗更新',
+      granted: p.settings.updateShop,
+      dependency: 'role',
+    },
+    {
+      category: '店舗設定',
+      action: 'deleteShop',
+      label: '店舗削除',
+      granted: p.settings.deleteShop,
+      dependency: 'role',
+    },
+    {
+      category: '店舗',
+      action: 'read',
+      label: '店舗閲覧',
+      granted: p.shop.read,
+      dependency: 'role',
+    },
     // プラン依存
     {
-      category: '顧客管理', action: 'exportCsv', label: 'CSV出力',
+      category: '顧客管理',
+      action: 'exportCsv',
+      label: 'CSV出力',
       granted: p.customer.exportCsv,
       note: p.customer.exportCsv ? '利用可' : undefined,
       dependency: 'plan',
     },
     {
-      category: '店舗設定', action: 'createShopLimit', label: '店舗作成上限',
+      category: '店舗設定',
+      action: 'createShopLimit',
+      label: '店舗作成上限',
       granted: p.settings.createShop,
       note: p.settings.createShop
-        ? p.settings.createShopLimit === SHOP_LIMIT_UNLIMITED ? '無制限' : `上限${p.settings.createShopLimit}店`
+        ? p.settings.createShopLimit === SHOP_LIMIT_UNLIMITED
+          ? '無制限'
+          : `上限${p.settings.createShopLimit}店`
         : undefined,
       dependency: 'plan',
     },
   ]
 
   const sections: { dep: 'role' | 'plan'; title: string; badge: string }[] = [
-    { dep: 'role', title: 'ロールによる操作権限', badge: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-    { dep: 'plan', title: 'プランによる数量・機能', badge: 'bg-purple-50 text-purple-600 border-purple-200' },
+    {
+      dep: 'role',
+      title: 'ロールによる操作権限',
+      badge: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+    },
+    {
+      dep: 'plan',
+      title: 'プランによる数量・機能',
+      badge: 'bg-purple-50 text-purple-600 border-purple-200',
+    },
   ]
 
   const roleLabel: Record<string, string> = {
@@ -71,7 +133,9 @@ export function DashboardPage() {
 
       {/* ユーザー情報カード */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">現在のユーザー</h2>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          現在のユーザー
+        </h2>
         <div className="flex flex-wrap gap-4">
           <div>
             <p className="text-xs text-gray-400">メール</p>
@@ -93,7 +157,9 @@ export function DashboardPage() {
           </div>
           <div>
             <p className="text-xs text-gray-400">プラン</p>
-            <span className={`inline-block px-2 py-0.5 rounded-full text-sm font-bold border ${planColor[me.plan] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+            <span
+              className={`inline-block px-2 py-0.5 rounded-full text-sm font-bold border ${planColor[me.plan] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
+            >
               {me.plan.toUpperCase()}
             </span>
           </div>
@@ -102,7 +168,9 @@ export function DashboardPage() {
 
       {/* 権限一覧 */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">権限一覧</h2>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          権限一覧
+        </h2>
         <div className="space-y-6">
           {sections.map(({ dep, title, badge }, sectionIndex) => {
             const depRows = rows.filter((r) => r.dependency === dep)
@@ -112,7 +180,9 @@ export function DashboardPage() {
                 {sectionIndex > 0 && (
                   <hr className="my-2 mb-6 border-0 border-t border-gray-200" aria-hidden />
                 )}
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold mb-3 ${badge}`}>
+                <div
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold mb-3 ${badge}`}
+                >
                   <span>{dep === 'role' ? '👤' : '📋'}</span>
                   {title}
                 </div>

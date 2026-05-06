@@ -1,6 +1,12 @@
 import { SELF } from 'cloudflare:test'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { resetDb, createTestJwt, authedFetch, TEST_USER_ALICE, TEST_TENANT_S_ID } from '../test/helpers'
+import {
+  resetDb,
+  createTestJwt,
+  authedFetch,
+  TEST_USER_ALICE,
+  TEST_TENANT_S_ID,
+} from '../test/helpers'
 
 describe('POST /api/auth/seed', () => {
   beforeEach(() => resetDb())
@@ -9,7 +15,7 @@ describe('POST /api/auth/seed', () => {
     // まず seed エンドポイントを呼ぶ
     const res = await SELF.fetch('http://localhost/api/auth/seed', { method: 'POST' })
     expect(res.status).toBe(200)
-    const body = await res.json() as { users: unknown[]; password: string }
+    const body = (await res.json()) as { users: unknown[]; password: string }
     expect(body.users).toHaveLength(24)
     expect(body.password).toBe('password')
   })
@@ -25,7 +31,7 @@ describe('POST /api/auth/login', () => {
       body: JSON.stringify({ email: 'alice@test.com', password: 'password' }),
     })
     expect(res.status).toBe(200)
-    const body = await res.json() as { token: string; role: string }
+    const body = (await res.json()) as { token: string; role: string }
     expect(body.token).toBeTruthy()
     expect(body.role).toBe('tenant_owner')
   })
@@ -65,8 +71,12 @@ describe('GET /api/auth/me', () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/auth/me', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as {
-      id: string; email: string; role: string; plan: string; permissions: Record<string, unknown>
+    const body = (await res.json()) as {
+      id: string
+      email: string
+      role: string
+      plan: string
+      permissions: Record<string, unknown>
     }
     expect(body.id).toBe(TEST_USER_ALICE)
     expect(body.role).toBe('tenant_owner')

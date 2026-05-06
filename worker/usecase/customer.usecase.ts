@@ -23,7 +23,10 @@ export class CustomerUseCase {
     return this.customerRepo.findById(customerId)
   }
 
-  async updateCustomer(customerId: string, data: { name?: string; tag?: string | null; memo?: string | null }) {
+  async updateCustomer(
+    customerId: string,
+    data: { name?: string; tag?: string | null; memo?: string | null },
+  ) {
     return this.customerRepo.update(customerId, data)
   }
 

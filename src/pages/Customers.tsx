@@ -44,9 +44,15 @@ export function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [errorStatus, setErrorStatus] = useState<number | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [_refreshKey, setRefreshKey] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', shopId: '', tag: '', memo: '' })
+  const [newCustomer, setNewCustomer] = useState({
+    name: '',
+    email: '',
+    shopId: '',
+    tag: '',
+    memo: '',
+  })
   const [creating, setCreating] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [editData, setEditData] = useState({ name: '', tag: '', memo: '' })
@@ -82,7 +88,7 @@ export function CustomersPage() {
 
   useEffect(() => {
     void fetchPage(null, true)
-  }, [fetchPage, refreshKey])
+  }, [fetchPage])
 
   const handleNextPage = async () => {
     if (!nextCursor) return
@@ -92,7 +98,8 @@ export function CustomersPage() {
 
   const handlePrevPage = async () => {
     if (cursorBackStack.length === 0) return
-    const prevRequestCursor = cursorBackStack[cursorBackStack.length - 1]!
+    const prevRequestCursor = cursorBackStack.at(-1)
+    if (prevRequestCursor === undefined) return
     setCursorBackStack((s) => s.slice(0, -1))
     await fetchPage(prevRequestCursor, false)
   }
@@ -102,10 +109,13 @@ export function CustomersPage() {
   }
 
   useEffect(() => {
-    apiClient.api.shops.$get().then(async (res) => {
-      const data = await parseJson<Shop[]>(res)
-      setShops(data)
-    }).catch(() => {})
+    apiClient.api.shops
+      .$get()
+      .then(async (res) => {
+        const data = await parseJson<Shop[]>(res)
+        setShops(data)
+      })
+      .catch(() => {})
   }, [])
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -173,11 +183,18 @@ export function CustomersPage() {
     setExportResult(null)
     try {
       const exportRes = await apiClient.api.customers.export.$get()
-      const res = await parseJson<{ customers: Customer[]; exportedAt: string; count: number }>(exportRes)
+      const res = await parseJson<{ customers: Customer[]; exportedAt: string; count: number }>(
+        exportRes,
+      )
       setExportResult(`${res.count}件のデータをエクスポートしました（${res.exportedAt}）`)
     } catch (err) {
       const e = err as Error & { status?: number }
-      const suffix = e.status === 403 ? '（Gate1: PBAC 403）' : e.status === 422 ? '（UseCase: 422 上限超過）' : ''
+      const suffix =
+        e.status === 403
+          ? '（Gate1: PBAC 403）'
+          : e.status === 422
+            ? '（UseCase: 422 上限超過）'
+            : ''
       setExportResult(`エラー: ${e.message} ${suffix}`)
     } finally {
       setExporting(false)
@@ -194,6 +211,7 @@ export function CustomersPage() {
       <div className="flex items-center gap-3 mb-4">
         <Permission target="customer" action="create">
           <button
+            type="button"
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
@@ -211,6 +229,7 @@ export function CustomersPage() {
           }
         >
           <button
+            type="button"
             onClick={handleExport}
             disabled={exporting}
             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -220,6 +239,7 @@ export function CustomersPage() {
         </Permission>
 
         <button
+          type="button"
           onClick={() => setRefreshKey((k) => k + 1)}
           className="ml-auto text-gray-500 hover:text-gray-700 text-sm px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
@@ -228,7 +248,9 @@ export function CustomersPage() {
       </div>
 
       {exportResult && (
-        <div className={`mb-4 px-4 py-2 rounded-lg text-sm ${exportResult.startsWith('エラー') ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+        <div
+          className={`mb-4 px-4 py-2 rounded-lg text-sm ${exportResult.startsWith('エラー') ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
+        >
           {exportResult}
         </div>
       )}
@@ -246,30 +268,46 @@ export function CustomersPage() {
             >
               <option value="">店舗を選択</option>
               {shops.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
             <input
-              type="text" placeholder="名前" required value={newCustomer.name}
+              type="text"
+              placeholder="名前"
+              required
+              value={newCustomer.name}
               onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-40"
             />
             <input
-              type="email" placeholder="メール" required value={newCustomer.email}
+              type="email"
+              placeholder="メール"
+              required
+              value={newCustomer.email}
               onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-52"
             />
             <input
-              type="text" placeholder="タグ（任意）" value={newCustomer.tag}
+              type="text"
+              placeholder="タグ（任意）"
+              value={newCustomer.tag}
               onChange={(e) => setNewCustomer((p) => ({ ...p, tag: e.target.value }))}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-32"
             />
-            <button type="submit" disabled={creating}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1.5 rounded-lg disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={creating}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1.5 rounded-lg disabled:opacity-50"
+            >
               {creating ? '作成中...' : '作成'}
             </button>
-            <button type="button" onClick={() => setShowCreateForm(false)}
-              className="text-gray-500 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-100">
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              className="text-gray-500 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-100"
+            >
               キャンセル
             </button>
           </form>
@@ -280,11 +318,17 @@ export function CustomersPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-sm text-red-700">
           <strong>
-            {errorStatus === 403 ? 'Gate1: PBAC 403 – ' : errorStatus === 404 ? 'Gate2: ReBAC 404 – ' : ''}
+            {errorStatus === 403
+              ? 'Gate1: PBAC 403 – '
+              : errorStatus === 404
+                ? 'Gate2: ReBAC 404 – '
+                : ''}
           </strong>
           {error}
           {errorStatus === 403 && (
-            <p className="mt-1 text-red-500">このロールでは顧客情報にアクセスできません（shop_staff は customer.read = false）</p>
+            <p className="mt-1 text-red-500">
+              このロールでは顧客情報にアクセスできません（shop_staff は customer.read = false）
+            </p>
           )}
         </div>
       )}
@@ -311,29 +355,41 @@ export function CustomersPage() {
                 editId === c.id ? (
                   <tr key={c.id} className="bg-yellow-50">
                     <td className="px-4 py-2">
-                      <input value={editData.name}
+                      <input
+                        value={editData.name}
                         onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full" />
+                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full"
+                      />
                     </td>
                     <td className="px-4 py-2 text-gray-500">{c.email}</td>
                     <td className="px-4 py-2">
-                      <input value={editData.tag}
+                      <input
+                        value={editData.tag}
                         onChange={(e) => setEditData((p) => ({ ...p, tag: e.target.value }))}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full" />
+                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full"
+                      />
                     </td>
                     <td className="px-4 py-2">
-                      <input value={editData.memo}
+                      <input
+                        value={editData.memo}
                         onChange={(e) => setEditData((p) => ({ ...p, memo: e.target.value }))}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full" />
+                        className="border border-gray-300 rounded px-2 py-1 text-sm w-full"
+                      />
                     </td>
                     <td className="px-4 py-2 text-center">
                       <div className="flex gap-2 justify-center">
-                        <button onClick={() => handleUpdate(c.id)}
-                          className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-1 rounded">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdate(c.id)}
+                          className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-1 rounded"
+                        >
                           保存
                         </button>
-                        <button onClick={() => setEditId(null)}
-                          className="text-gray-500 text-xs px-3 py-1 rounded hover:bg-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => setEditId(null)}
+                          className="text-gray-500 text-xs px-3 py-1 rounded hover:bg-gray-100"
+                        >
                           キャンセル
                         </button>
                       </div>
@@ -348,22 +404,34 @@ export function CustomersPage() {
                         <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full">
                           {c.tag}
                         </span>
-                      ) : <span className="text-gray-300">-</span>}
+                      ) : (
+                        <span className="text-gray-300">-</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs truncate max-w-xs">{c.memo ?? '-'}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs truncate max-w-xs">
+                      {c.memo ?? '-'}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex gap-2 justify-center">
                         <Permission
                           target="customer"
                           action="update"
                           fallback={
-                            <button disabled className="text-gray-300 text-xs px-3 py-1 rounded border border-gray-200" title="更新権限なし">
+                            <button
+                              type="button"
+                              disabled
+                              className="text-gray-300 text-xs px-3 py-1 rounded border border-gray-200"
+                              title="更新権限なし"
+                            >
                               編集
                             </button>
                           }
                         >
-                          <button onClick={() => handleEdit(c)}
-                            className="bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs px-3 py-1 rounded border border-amber-200">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(c)}
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs px-3 py-1 rounded border border-amber-200"
+                          >
                             編集
                           </button>
                         </Permission>
@@ -371,13 +439,21 @@ export function CustomersPage() {
                           target="customer"
                           action="delete"
                           fallback={
-                            <button disabled className="text-gray-300 text-xs px-3 py-1 rounded border border-gray-200" title="削除権限なし">
+                            <button
+                              type="button"
+                              disabled
+                              className="text-gray-300 text-xs px-3 py-1 rounded border border-gray-200"
+                              title="削除権限なし"
+                            >
                               削除
                             </button>
                           }
                         >
-                          <button onClick={() => handleDelete(c.id)}
-                            className="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-3 py-1 rounded border border-red-200">
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(c.id)}
+                            className="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-3 py-1 rounded border border-red-200"
+                          >
                             削除
                           </button>
                         </Permission>
@@ -393,9 +469,7 @@ export function CustomersPage() {
               本ページ <strong className="text-gray-800">{customers.length}</strong> 件
               {customers.length > 0 && ' （スコープ内・カーソル順）'}
             </span>
-            {nextCursor !== null && (
-              <span className="text-indigo-600">次のページがあります</span>
-            )}
+            {nextCursor !== null && <span className="text-indigo-600">次のページがあります</span>}
             <div className="flex gap-2 ml-auto">
               <button
                 type="button"

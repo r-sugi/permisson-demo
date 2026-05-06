@@ -1,5 +1,5 @@
 import type { ShopRow } from '../rdb/models/shops'
-import { ShopRepository } from './shop.repository'
+import type { ShopRepository } from './shop.repository'
 
 export interface ShopScope {
   listAccessible(): Promise<ShopRow[]>

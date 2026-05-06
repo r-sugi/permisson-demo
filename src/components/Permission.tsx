@@ -11,5 +11,5 @@ type Props = {
 
 export function Permission({ target, action, children, fallback = null }: Props) {
   const { hasPermission } = usePermission()
-  return hasPermission(target, action) ? <>{children}</> : <>{fallback}</>
+  return hasPermission(target, action) ? children : fallback
 }

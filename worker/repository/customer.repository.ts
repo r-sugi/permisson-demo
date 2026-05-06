@@ -18,7 +18,11 @@ export class CustomerRepository {
     private readonly userRelations: UserRelationRepository,
   ) {}
 
-  static create(userId: string, db: DrizzleDb, userRelations = new UserRelationRepository(db)): CustomerRepository {
+  static create(
+    userId: string,
+    db: DrizzleDb,
+    userRelations = new UserRelationRepository(db),
+  ): CustomerRepository {
     return new CustomerRepository(userId, db, userRelations)
   }
 
@@ -42,7 +46,7 @@ export class CustomerRepository {
     const rows = (await scope.findCustomerRows(cursor, pageLimit + 1)) as CustomerRow[]
     const hasMore = rows.length > pageLimit
     const items = hasMore ? rows.slice(0, pageLimit) : rows
-    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1]!.id : null
+    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1]?.id : null
     return { items, nextCursor }
   }
 
@@ -72,7 +76,10 @@ export class CustomerRepository {
     return this.db.select().from(schema.customers).where(eq(schema.customers.id, customerId)).get()
   }
 
-  async update(customerId: string, data: { name?: string; tag?: string | null; memo?: string | null }) {
+  async update(
+    customerId: string,
+    data: { name?: string; tag?: string | null; memo?: string | null },
+  ) {
     await this.findById(customerId)
     await this.db
       .update(schema.customers)

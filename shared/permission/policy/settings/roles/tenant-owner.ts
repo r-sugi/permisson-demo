@@ -1,6 +1,9 @@
 import { PLAN, SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
 import { SettingsPolicyBase } from '@shared/permission/policy/settings/base'
-import type { SettingsPermissions, SettingsPlanFeatures } from '@shared/permission/policy/settings/types'
+import type {
+  SettingsPermissions,
+  SettingsPlanFeatures,
+} from '@shared/permission/policy/settings/types'
 
 export class TenantOwnerSettingsPolicy extends SettingsPolicyBase {
   listPermissions(): SettingsPermissions & SettingsPlanFeatures {

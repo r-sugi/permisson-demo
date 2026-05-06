@@ -8,6 +8,7 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format .",
     "format:fix": "biome format --write .",
+    "fix": "npm run lint:fix && npm run format:fix",
     "dev": "npm run cf-typegen && vite",
     "build": "tsc -b && vite build",
     "preview": "npm run build && vite preview",

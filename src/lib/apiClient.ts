@@ -13,7 +13,11 @@ export const apiClient = hc<AppType>('/', {
 })
 
 /** `hc` の `ClientResponse` / 標準 `Response` を従来の `apiFetch` と同様にパース（失敗時は status / body を付与） */
-export async function parseJson<T>(res: { ok: boolean; status: number; json(): Promise<unknown> }): Promise<T> {
+export async function parseJson<T>(res: {
+  ok: boolean
+  status: number
+  json(): Promise<unknown>
+}): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: 'Unknown error' }))
     const err = new Error((body as { message?: string }).message ?? 'API error') as Error & {

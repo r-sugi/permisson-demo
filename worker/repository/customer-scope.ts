@@ -38,10 +38,11 @@ function shopsScopeExists(db: DrizzleDb, userId: string) {
   )
 }
 
-function customerWhere(scopeSql: SQL, cursor: string | null): SQL | undefined {
-  const parts: SQL[] = [scopeSql]
-  if (cursor) parts.push(gt(schema.customers.id, cursor))
-  return parts.length === 1 ? parts[0] : and(...parts)!
+function customerWhere(scopeSql: SQL, cursor: string | null): SQL {
+  if (!cursor) return scopeSql
+  const combined = and(scopeSql, gt(schema.customers.id, cursor))
+  if (combined === undefined) throw new Error('customerWhere: combined predicate is undefined')
+  return combined
 }
 
 class TenantCustomerScope extends BaseCustomerScope {
@@ -57,7 +58,7 @@ class TenantCustomerScope extends BaseCustomerScope {
     return this.db
       .select()
       .from(schema.customers)
-      .where(customerWhere(scopePred, cursor)!)
+      .where(customerWhere(scopePred, cursor))
       .orderBy(asc(schema.customers.id))
       .limit(limit)
       .all()
@@ -109,7 +110,7 @@ class ShopsCustomerScope extends BaseCustomerScope {
     return this.db
       .select()
       .from(schema.customers)
-      .where(customerWhere(scopePred, cursor)!)
+      .where(customerWhere(scopePred, cursor))
       .orderBy(asc(schema.customers.id))
       .limit(limit)
       .all()

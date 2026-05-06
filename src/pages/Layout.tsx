@@ -34,9 +34,15 @@ export function Layout() {
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
         <span className="font-bold text-gray-800">権限管理デモ</span>
         <nav className="flex items-center gap-1 ml-4">
-          <NavLink to="/" end className={navLinkClass}>ダッシュボード</NavLink>
-          <NavLink to="/customers" className={navLinkClass}>顧客管理</NavLink>
-          <NavLink to="/shops" className={navLinkClass}>店舗管理</NavLink>
+          <NavLink to="/" end className={navLinkClass}>
+            ダッシュボード
+          </NavLink>
+          <NavLink to="/customers" className={navLinkClass}>
+            顧客管理
+          </NavLink>
+          <NavLink to="/shops" className={navLinkClass}>
+            店舗管理
+          </NavLink>
         </nav>
         {me && (
           <div className="ml-auto flex items-center gap-3">
@@ -44,10 +50,13 @@ export function Layout() {
             <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
               {roleLabel[me.role] ?? me.role}
             </span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${planColor[me.plan] ?? 'bg-gray-100 text-gray-500'}`}>
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-full ${planColor[me.plan] ?? 'bg-gray-100 text-gray-500'}`}
+            >
               {me.plan.toUpperCase()}
             </span>
             <button
+              type="button"
               onClick={handleLogout}
               className="text-sm text-gray-500 hover:text-red-600 transition-colors"
             >

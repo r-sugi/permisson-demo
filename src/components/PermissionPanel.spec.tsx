@@ -21,7 +21,12 @@ const tenantOwnerProMe: MeData = {
   shopScope: '全て',
   permissions: {
     customer: { create: true, read: true, update: true, delete: true, exportCsv: true },
-    settings: { createShop: true, updateShop: true, deleteShop: true, createShopLimit: SHOP_LIMIT_UNLIMITED },
+    settings: {
+      createShop: true,
+      updateShop: true,
+      deleteShop: true,
+      createShopLimit: SHOP_LIMIT_UNLIMITED,
+    },
     shop: { read: true },
   },
 }

@@ -10,13 +10,21 @@ export interface PermissionsMap {
   shop: ShopPermissions
 }
 
-export type { CustomerPermissions, CustomerPlanFeatures, SettingsPermissions, SettingsPlanFeatures, ShopPermissions }
+export type {
+  CustomerPermissions,
+  CustomerPlanFeatures,
+  SettingsPermissions,
+  SettingsPlanFeatures,
+  ShopPermissions,
+}
 
 export function buildPermissionsMap(context: PolicyContext): PermissionsMap {
   return Object.fromEntries(
     Object.entries(POLICY_MAP).map(([target, roles]) => [
       target,
-      (roles as Record<Role, (ctx: PolicyContext) => { listPermissions: () => unknown }>)[context.role](context).listPermissions(),
+      (roles as Record<Role, (ctx: PolicyContext) => { listPermissions: () => unknown }>)
+        [context.role](context)
+        .listPermissions(),
     ]),
   ) as unknown as PermissionsMap
 }

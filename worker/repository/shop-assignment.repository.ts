@@ -10,7 +10,9 @@ export class ShopAssignmentRepository implements ShopAssignmentRepositoryPort {
     const row = await this.db
       .select()
       .from(schema.shopAssignments)
-      .where(and(eq(schema.shopAssignments.userId, userId), eq(schema.shopAssignments.shopId, shopId)))
+      .where(
+        and(eq(schema.shopAssignments.userId, userId), eq(schema.shopAssignments.shopId, shopId)),
+      )
       .get()
     if (!row) return null
     return { userId: row.userId, shopId: row.shopId }

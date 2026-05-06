@@ -43,12 +43,8 @@ describe('Permission', () => {
     mockUsePermission.mockReturnValue(makeUsePermissionReturn(false))
 
     render(
-      <Permission
-        target="customer"
-        action="delete"
-        fallback={<span>削除権限なし</span>}
-      >
-        <button>削除</button>
+      <Permission target="customer" action="delete" fallback={<span>削除権限なし</span>}>
+        <button type="button">削除</button>
       </Permission>,
     )
     expect(screen.getByText('削除権限なし')).toBeInTheDocument()
@@ -59,12 +55,8 @@ describe('Permission', () => {
     mockUsePermission.mockReturnValue(makeUsePermissionReturn(true))
 
     render(
-      <Permission
-        target="customer"
-        action="read"
-        fallback={<span>権限なし</span>}
-      >
-        <button>閲覧</button>
+      <Permission target="customer" action="read" fallback={<span>権限なし</span>}>
+        <button type="button">閲覧</button>
       </Permission>,
     )
     expect(screen.getByText('閲覧')).toBeInTheDocument()

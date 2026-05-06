@@ -10,10 +10,7 @@ export class SubscriptionRepository {
       .select()
       .from(schema.subscriptions)
       .where(
-        and(
-          eq(schema.subscriptions.tenantId, tenantId),
-          eq(schema.subscriptions.status, 'active'),
-        ),
+        and(eq(schema.subscriptions.tenantId, tenantId), eq(schema.subscriptions.status, 'active')),
       )
       .get()
   }

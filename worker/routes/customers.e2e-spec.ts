@@ -97,7 +97,7 @@ describe('POST /api/customers - 顧客作成', () => {
       tag: 'NEW',
     })
     expect(res.status).toBe(201)
-    const body = await res.json() as { id: string; name: string }
+    const body = (await res.json()) as { id: string; name: string }
     expect(body.name).toBe('新規顧客')
     expect(body.id).toBeTruthy()
   })
@@ -138,7 +138,7 @@ describe('POST /api/customers - 顧客作成', () => {
       shopId: TEST_SHOP_S1_ID,
     })
     expect(res.status).toBe(201)
-    const body = await res.json() as { id: string; name: string }
+    const body = (await res.json()) as { id: string; name: string }
     expect(body.name).toBe('Bob経由顧客')
   })
 
@@ -163,7 +163,7 @@ describe('PATCH /api/customers/:id - 顧客更新', () => {
       tag: 'UPDATED',
     })
     expect(res.status).toBe(200)
-    const body = await res.json() as { name: string; tag: string }
+    const body = (await res.json()) as { name: string; tag: string }
     expect(body.name).toBe('田中一郎（更新済み）')
     expect(body.tag).toBe('UPDATED')
   })
@@ -199,7 +199,7 @@ describe('PATCH /api/customers/:id - 顧客更新', () => {
       name: 'Bob更新',
     })
     expect(res.status).toBe(200)
-    const body = await res.json() as { name: string }
+    const body = (await res.json()) as { name: string }
     expect(body.name).toBe('Bob更新')
   })
 
@@ -247,7 +247,7 @@ describe('GET /api/customers/export - CSVエクスポート', () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers/export', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as { customers: unknown[]; count: number }
+    const body = (await res.json()) as { customers: unknown[]; count: number }
     expect(body.customers).toBeDefined()
     expect(body.count).toBeGreaterThan(0)
   })
@@ -274,7 +274,7 @@ describe('GET /api/customers/export - CSVエクスポート', () => {
     const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers/export', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as { count: number }
+    const body = (await res.json()) as { count: number }
     expect(body.count).toBeGreaterThan(0)
   })
 })

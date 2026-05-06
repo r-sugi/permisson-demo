@@ -23,7 +23,7 @@ export function ShopsPage() {
   const [shops, setShops] = useState<Shop[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [_refreshKey, setRefreshKey] = useState(0)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newShopName, setNewShopName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -45,8 +45,7 @@ export function ShopsPage() {
 
   useEffect(() => {
     void fetchShops()
-  }, [fetchShops, refreshKey])
-
+  }, [fetchShops])
 
   const handleDelete = async (shop: Shop) => {
     if (!confirm(`「${shop.name}」を削除しますか？（元に戻せません）`)) return
@@ -88,7 +87,14 @@ export function ShopsPage() {
       setRefreshKey((k) => k + 1)
     } catch (err) {
       const e = err as Error & { status?: number }
-      const suffix = e.status === 422 ? '（UseCase: 422 上限超過）' : e.status === 403 ? '（Gate1: 403）' : e.status === 404 ? '（Gate2: ReBAC 404）' : ''
+      const suffix =
+        e.status === 422
+          ? '（UseCase: 422 上限超過）'
+          : e.status === 403
+            ? '（Gate1: 403）'
+            : e.status === 404
+              ? '（Gate2: ReBAC 404）'
+              : ''
       setCreateError(`${e.message} ${suffix}`)
     } finally {
       setCreating(false)
@@ -111,13 +117,14 @@ export function ShopsPage() {
             </strong>
           </span>
           <span>
-            現在の店舗数:{' '}
-            <strong className="text-slate-700">{shops.length}店</strong>
+            現在の店舗数: <strong className="text-slate-700">{shops.length}店</strong>
           </span>
           {!isCreateShopLimitUnlimited && (
             <span>
               残り作成可能数:{' '}
-              <strong className={shops.length >= createShopLimit ? 'text-red-600' : 'text-emerald-600'}>
+              <strong
+                className={shops.length >= createShopLimit ? 'text-red-600' : 'text-emerald-600'}
+              >
                 {Math.max(0, createShopLimit - shops.length)}店
               </strong>
             </span>
@@ -137,6 +144,7 @@ export function ShopsPage() {
           }
         >
           <button
+            type="button"
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
@@ -144,6 +152,7 @@ export function ShopsPage() {
           </button>
         </Permission>
         <button
+          type="button"
           onClick={() => setRefreshKey((k) => k + 1)}
           className="ml-auto text-gray-500 hover:text-gray-700 text-sm px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
@@ -155,7 +164,12 @@ export function ShopsPage() {
       {showCreateForm && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold text-slate-800 mb-3">新規店舗作成</h3>
-          <form onSubmit={(e) => { void handleCreateWithTenant(e) }} className="flex gap-2 items-end">
+          <form
+            onSubmit={(e) => {
+              void handleCreateWithTenant(e)
+            }}
+            className="flex gap-2 items-end"
+          >
             <input
               type="text"
               placeholder="店舗名"
@@ -164,17 +178,28 @@ export function ShopsPage() {
               onChange={(e) => setNewShopName(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-56"
             />
-            <button type="submit" disabled={creating}
-              className="bg-slate-700 hover:bg-slate-800 text-white text-sm px-4 py-1.5 rounded-lg disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={creating}
+              className="bg-slate-700 hover:bg-slate-800 text-white text-sm px-4 py-1.5 rounded-lg disabled:opacity-50"
+            >
               {creating ? '作成中...' : '作成'}
             </button>
-            <button type="button" onClick={() => { setShowCreateForm(false); setCreateError(null) }}
-              className="text-gray-500 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-100">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateForm(false)
+                setCreateError(null)
+              }}
+              className="text-gray-500 text-sm px-3 py-1.5 rounded-lg hover:bg-gray-100"
+            >
               キャンセル
             </button>
           </form>
           {createError && (
-            <p className="mt-2 text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">{createError}</p>
+            <p className="mt-2 text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2">
+              {createError}
+            </p>
           )}
         </div>
       )}
@@ -206,19 +231,27 @@ export function ShopsPage() {
               {shops.map((shop) => (
                 <tr key={shop.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">{shop.name}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs font-mono">{shop.tenantId.slice(0, 8)}...</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs font-mono">
+                    {shop.tenantId.slice(0, 8)}...
+                  </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{shop.createdAt}</td>
                   <td className="px-4 py-3 text-center">
                     <Permission
                       target="settings"
                       action="deleteShop"
                       fallback={
-                        <button disabled className="text-gray-300 text-xs px-3 py-1 rounded border border-gray-200" title="削除権限なし">
+                        <button
+                          type="button"
+                          disabled
+                          className="text-gray-300 text-xs px-3 py-1 rounded border border-gray-200"
+                          title="削除権限なし"
+                        >
                           削除
                         </button>
                       }
                     >
                       <button
+                        type="button"
                         onClick={() => handleDelete(shop)}
                         className="bg-red-100 hover:bg-red-200 text-red-700 text-xs px-3 py-1 rounded border border-red-200"
                       >

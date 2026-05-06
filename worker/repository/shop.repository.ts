@@ -48,11 +48,11 @@ export class ShopRepository implements ShopRepositoryPort {
     for (let i = 0; i < shopIds.length; i += limit) {
       parts.push(inArray(schema.shops.id, shopIds.slice(i, i + limit)))
     }
-    return this.db
-      .select()
-      .from(schema.shops)
-      .where(or(...parts)!)
-      .all()
+    const condition = or(...parts)
+    if (condition === undefined) {
+      throw new Error('listActiveByShopIds: OR condition is undefined')
+    }
+    return this.db.select().from(schema.shops).where(condition).all()
   }
 
   async countActiveByTenantId(tenantId: string): Promise<number> {
@@ -60,13 +60,20 @@ export class ShopRepository implements ShopRepositoryPort {
     return rows.length
   }
 
-  async insertShop(params: { id: string; tenantId: string; name: string }): Promise<ShopRow | undefined> {
+  async insertShop(params: {
+    id: string
+    tenantId: string
+    name: string
+  }): Promise<ShopRow | undefined> {
     await this.db.insert(schema.shops).values(params).run()
     return this.db.select().from(schema.shops).where(eq(schema.shops.id, params.id)).get()
   }
 
   async deleteById(shopId: string): Promise<void> {
-    await this.db.delete(schema.shopAssignments).where(eq(schema.shopAssignments.shopId, shopId)).run()
+    await this.db
+      .delete(schema.shopAssignments)
+      .where(eq(schema.shopAssignments.shopId, shopId))
+      .run()
     await this.db.delete(schema.shops).where(eq(schema.shops.id, shopId)).run()
   }
 }

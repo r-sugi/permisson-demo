@@ -9,7 +9,9 @@ function makeCtx(role: string, plan: string): PolicyContext {
 describe('POLICY_MAP - customer', () => {
   describe('tenant_owner', () => {
     it('pro: 全操作可 + CSV可', () => {
-      const perms = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const perms = POLICY_MAP.customer
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(perms.create).toBe(true)
       expect(perms.read).toBe(true)
       expect(perms.update).toBe(true)
@@ -18,12 +20,16 @@ describe('POLICY_MAP - customer', () => {
     })
 
     it('basic: 全操作可 + CSV可', () => {
-      const perms = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'basic')).listPermissions()
+      const perms = POLICY_MAP.customer
+        .tenant_owner(makeCtx('tenant_owner', 'basic'))
+        .listPermissions()
       expect(perms.exportCsv).toBe(true)
     })
 
     it('starter: 全操作可 + CSV不可', () => {
-      const perms = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'starter')).listPermissions()
+      const perms = POLICY_MAP.customer
+        .tenant_owner(makeCtx('tenant_owner', 'starter'))
+        .listPermissions()
       expect(perms.create).toBe(true)
       expect(perms.exportCsv).toBe(false)
     })
@@ -31,7 +37,9 @@ describe('POLICY_MAP - customer', () => {
 
   describe('tenant_staff', () => {
     it('pro: tenant_owner と同権限', () => {
-      const perms = POLICY_MAP.customer.tenant_staff(makeCtx('tenant_staff', 'pro')).listPermissions()
+      const perms = POLICY_MAP.customer
+        .tenant_staff(makeCtx('tenant_staff', 'pro'))
+        .listPermissions()
       expect(perms.create).toBe(true)
       expect(perms.delete).toBe(true)
       expect(perms.exportCsv).toBe(true)
@@ -54,7 +62,9 @@ describe('POLICY_MAP - customer', () => {
     })
 
     it('starter: CSV不可', () => {
-      const perms = POLICY_MAP.customer.shop_owner(makeCtx('shop_owner', 'starter')).listPermissions()
+      const perms = POLICY_MAP.customer
+        .shop_owner(makeCtx('shop_owner', 'starter'))
+        .listPermissions()
       expect(perms.exportCsv).toBe(false)
     })
   })
@@ -73,7 +83,9 @@ describe('POLICY_MAP - customer', () => {
   describe('developer', () => {
     it('pro: tenant_owner と同様の顧客権限', () => {
       const dev = POLICY_MAP.customer.developer(makeCtx('developer', 'pro')).listPermissions()
-      const owner = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const owner = POLICY_MAP.customer
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(dev).toEqual(owner)
     })
   })
@@ -81,7 +93,9 @@ describe('POLICY_MAP - customer', () => {
   describe('system', () => {
     it('pro: tenant_owner と同様の顧客権限', () => {
       const sys = POLICY_MAP.customer.system(makeCtx('system', 'pro')).listPermissions()
-      const owner = POLICY_MAP.customer.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const owner = POLICY_MAP.customer
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(sys).toEqual(owner)
     })
   })
@@ -90,19 +104,25 @@ describe('POLICY_MAP - customer', () => {
 describe('POLICY_MAP - settings', () => {
   describe('tenant_owner', () => {
     it('pro: 全操作可 + 店舗無制限', () => {
-      const perms = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const perms = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(perms.createShop).toBe(true)
       expect(perms.deleteShop).toBe(true)
       expect(perms.createShopLimit).toBe(Number.MAX_SAFE_INTEGER)
     })
 
     it('basic: 30店舗まで', () => {
-      const perms = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'basic')).listPermissions()
+      const perms = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'basic'))
+        .listPermissions()
       expect(perms.createShopLimit).toBe(30)
     })
 
     it('starter: 5店舗まで', () => {
-      const perms = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'starter')).listPermissions()
+      const perms = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'starter'))
+        .listPermissions()
       expect(perms.createShopLimit).toBe(5)
     })
   })
@@ -125,16 +145,24 @@ describe('POLICY_MAP - settings', () => {
 
   describe('tenant_staff', () => {
     it('pro: tenant_owner と同様に店舗作成・削除可 + 無制限', () => {
-      const staff = POLICY_MAP.settings.tenant_staff(makeCtx('tenant_staff', 'pro')).listPermissions()
-      const owner = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const staff = POLICY_MAP.settings
+        .tenant_staff(makeCtx('tenant_staff', 'pro'))
+        .listPermissions()
+      const owner = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(staff.createShop).toBe(true)
       expect(staff.deleteShop).toBe(true)
       expect(staff.createShopLimit).toBe(owner.createShopLimit)
     })
 
     it('starter: 店舗数上限は tenant_owner と同じ 5', () => {
-      const staff = POLICY_MAP.settings.tenant_staff(makeCtx('tenant_staff', 'starter')).listPermissions()
-      const owner = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'starter')).listPermissions()
+      const staff = POLICY_MAP.settings
+        .tenant_staff(makeCtx('tenant_staff', 'starter'))
+        .listPermissions()
+      const owner = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'starter'))
+        .listPermissions()
       expect(staff.createShopLimit).toBe(owner.createShopLimit)
     })
   })
@@ -142,7 +170,9 @@ describe('POLICY_MAP - settings', () => {
   describe('developer', () => {
     it('pro: tenant_owner と同様の設定権限', () => {
       const dev = POLICY_MAP.settings.developer(makeCtx('developer', 'pro')).listPermissions()
-      const owner = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const owner = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(dev).toEqual(owner)
     })
   })
@@ -150,7 +180,9 @@ describe('POLICY_MAP - settings', () => {
   describe('system', () => {
     it('pro: tenant_owner と同様の設定権限', () => {
       const sys = POLICY_MAP.settings.system(makeCtx('system', 'pro')).listPermissions()
-      const owner = POLICY_MAP.settings.tenant_owner(makeCtx('tenant_owner', 'pro')).listPermissions()
+      const owner = POLICY_MAP.settings
+        .tenant_owner(makeCtx('tenant_owner', 'pro'))
+        .listPermissions()
       expect(sys).toEqual(owner)
     })
   })

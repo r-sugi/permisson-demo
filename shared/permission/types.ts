@@ -1,7 +1,13 @@
 // ================================
 // Role・Plan
 // ================================
-export type Role = 'developer' | 'tenant_owner' | 'tenant_staff' | 'shop_owner' | 'shop_staff' | 'system'
+export type Role =
+  | 'developer'
+  | 'tenant_owner'
+  | 'tenant_staff'
+  | 'shop_owner'
+  | 'shop_staff'
+  | 'system'
 export type Plan = 'starter' | 'basic' | 'pro'
 
 export const PLAN = {

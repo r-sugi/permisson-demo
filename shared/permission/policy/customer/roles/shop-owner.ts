@@ -1,6 +1,9 @@
 import { PLAN } from '@shared/permission/types'
 import { CustomerPolicyBase } from '@shared/permission/policy/customer/base'
-import type { CustomerPermissions, CustomerPlanFeatures } from '@shared/permission/policy/customer/types'
+import type {
+  CustomerPermissions,
+  CustomerPlanFeatures,
+} from '@shared/permission/policy/customer/types'
 
 export class ShopOwnerCustomerPolicy extends CustomerPolicyBase {
   listPermissions(): CustomerPermissions & CustomerPlanFeatures {

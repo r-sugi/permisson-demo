@@ -23,7 +23,7 @@ describe('GET /api/shops - 店舗一覧', () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/shops', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
+    const body = (await res.json()) as unknown[]
     expect(body).toHaveLength(2) // S社 渋谷店 + 新宿店
   })
 
@@ -31,7 +31,7 @@ describe('GET /api/shops - 店舗一覧', () => {
     const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/shops', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
+    const body = (await res.json()) as unknown[]
     expect(body).toHaveLength(1)
   })
 
@@ -39,7 +39,7 @@ describe('GET /api/shops - 店舗一覧', () => {
     const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/shops', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
+    const body = (await res.json()) as unknown[]
     expect(body).toHaveLength(1)
   })
 
@@ -47,7 +47,7 @@ describe('GET /api/shops - 店舗一覧', () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
     const res = await authedFetch('/api/shops', token)
     expect(res.status).toBe(200)
-    const body = await res.json() as unknown[]
+    const body = (await res.json()) as unknown[]
     expect(body).toHaveLength(1) // G社 博多店のみ
   })
 })
@@ -57,83 +57,62 @@ describe('POST /api/tenants/:tenantId/shops - 店舗作成', () => {
 
   it('tenant_owner(S社/pro): 201 で店舗作成成功', async () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
-      token,
-      'POST',
-      { name: '新店舗' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops`, token, 'POST', {
+      name: '新店舗',
+    })
     expect(res.status).toBe(201)
-    const body = await res.json() as { id: string; name: string }
+    const body = (await res.json()) as { id: string; name: string }
     expect(body.name).toBe('新店舗')
   })
 
   it('shop_owner: 403 (settings.createShop = false)', async () => {
     const token = await createTestJwt(TEST_USER_GRACE, 'shop_owner', TEST_TENANT_S_ID)
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
-      token,
-      'POST',
-      { name: '不正店舗' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops`, token, 'POST', {
+      name: '不正店舗',
+    })
     expect(res.status).toBe(403)
   })
 
   it('shop_staff: 403 (settings.createShop = false)', async () => {
     const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
-      token,
-      'POST',
-      { name: '不正店舗' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops`, token, 'POST', {
+      name: '不正店舗',
+    })
     expect(res.status).toBe(403)
   })
 
   it('tenant_owner: 別テナントIDでは 404 (ReBAC失敗)', async () => {
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     // ALICE は S社のみ割り当て済みなので G社テナントへの操作は 404
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_G_ID}/shops`,
-      token,
-      'POST',
-      { name: 'クロステナント試行' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_G_ID}/shops`, token, 'POST', {
+      name: 'クロステナント試行',
+    })
     expect(res.status).toBe(404)
   })
 
   it('tenant_owner(G社): S社テナントURLへの POST は ReBAC で 404', async () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
-      token,
-      'POST',
-      { name: 'GからSへ不正作成' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops`, token, 'POST', {
+      name: 'GからSへ不正作成',
+    })
     expect(res.status).toBe(404)
   })
 
   it('tenant_owner(G社/starter): starter上限5店なので作成可能', async () => {
     const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_G_ID}/shops`,
-      token,
-      'POST',
-      { name: 'G社 追加店舗' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_G_ID}/shops`, token, 'POST', {
+      name: 'G社 追加店舗',
+    })
     expect(res.status).toBe(201)
   })
 
   it('tenant_staff(S社/pro): 201 で店舗作成（PBAC は tenant_owner と同等）', async () => {
     const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
-    const res = await authedJsonFetch(
-      `/api/tenants/${TEST_TENANT_S_ID}/shops`,
-      token,
-      'POST',
-      { name: 'Bob経由店舗' },
-    )
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops`, token, 'POST', {
+      name: 'Bob経由店舗',
+    })
     expect(res.status).toBe(201)
-    const body = await res.json() as { name: string }
+    const body = (await res.json()) as { name: string }
     expect(body.name).toBe('Bob経由店舗')
   })
 })
@@ -149,12 +128,12 @@ describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
       { method: 'DELETE' },
     )
     expect(res.status).toBe(200)
-    const body = await res.json() as { shopId: string }
+    const body = (await res.json()) as { shopId: string }
     expect(body.shopId).toBe(TEST_SHOP_S1_ID)
 
     // 削除後、一覧から消えていることを確認
     const listRes = await authedFetch('/api/shops', token)
-    const shops = await listRes.json() as unknown[]
+    const shops = (await listRes.json()) as unknown[]
     expect(shops).toHaveLength(1) // 渋谷店が削除され新宿店のみ
   })
 
@@ -210,11 +189,9 @@ describe('DELETE /api/tenants/:tenantId/shops/:shopId - 店舗削除', () => {
 
   it('tenant_staff(S社): 200 で論理削除（PBAC・ReBAC ともに許可）', async () => {
     const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
-    const res = await authedFetch(
-      `/api/tenants/${TEST_TENANT_S_ID}/shops/test-shop-s2`,
-      token,
-      { method: 'DELETE' },
-    )
+    const res = await authedFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops/test-shop-s2`, token, {
+      method: 'DELETE',
+    })
     expect(res.status).toBe(200)
   })
 })

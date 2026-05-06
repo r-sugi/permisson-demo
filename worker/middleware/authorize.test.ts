@@ -20,10 +20,7 @@ const mockRepos: Repositories = {
   },
 }
 
-function testApp(
-  auth: AuthContext,
-  routes: (app: Hono<HonoEnv>) => void,
-) {
+function testApp(auth: AuthContext, routes: (app: Hono<HonoEnv>) => void) {
   const app = new Hono<HonoEnv>()
   app.use('*', async (c, next) => {
     c.set('auth', auth)
@@ -47,10 +44,8 @@ describe('authorize middleware', () => {
         plan: 'pro',
       }
       const app = testApp(auth, (a) =>
-        a.get(
-          '/ok',
-          authorize({ policy: { target: 'customer', action: 'read' } }),
-          (c) => c.json({ ok: true }),
+        a.get('/ok', authorize({ policy: { target: 'customer', action: 'read' } }), (c) =>
+          c.json({ ok: true }),
         ),
       )
       const res = await app.request('/ok')
@@ -66,10 +61,8 @@ describe('authorize middleware', () => {
         plan: 'pro',
       }
       const app = testApp(auth, (a) =>
-        a.get(
-          '/deny',
-          authorize({ policy: { target: 'customer', action: 'read' } }),
-          (c) => c.json({ ok: true }),
+        a.get('/deny', authorize({ policy: { target: 'customer', action: 'read' } }), (c) =>
+          c.json({ ok: true }),
         ),
       )
       const res = await app.request('/deny')

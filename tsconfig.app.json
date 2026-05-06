@@ -21,11 +21,6 @@
       "shared/*": ["./shared/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "shared/**/*",
-    "worker/**/*",
-    "worker-configuration.d.ts"
-  ],
+  "include": ["src/**/*", "shared/**/*", "worker/**/*", "worker-configuration.d.ts"],
   "exclude": ["worker/**/*.e2e-spec.ts", "worker/test/**/*"]
 }

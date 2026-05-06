@@ -15,13 +15,13 @@ export const TEST_TENANT_G_ID = 'test-tenant-g'
 export const TEST_SHOP_S1_ID = 'test-shop-s1'
 export const TEST_SHOP_F1_ID = 'test-shop-f1'
 export const TEST_SHOP_G1_ID = 'test-shop-g1'
-export const TEST_USER_ALICE = 'test-alice'     // tenant_owner × S社 (pro)
-export const TEST_USER_BOB = 'test-bob'         // tenant_staff × S社 (pro)
-export const TEST_USER_EVE = 'test-eve'         // tenant_owner × G社 (starter)
-export const TEST_USER_GRACE = 'test-grace'     // shop_owner × S社/shopS1 (pro)
-export const TEST_USER_HENRY = 'test-henry'     // shop_staff × S社/shopS1 (pro)
-export const TEST_USER_IRIS = 'test-iris'       // shop_owner × F社/shopF1 (basic)
-export const TEST_USER_KATE = 'test-kate'       // shop_owner × G社/shopG1 (starter)
+export const TEST_USER_ALICE = 'test-alice' // tenant_owner × S社 (pro)
+export const TEST_USER_BOB = 'test-bob' // tenant_staff × S社 (pro)
+export const TEST_USER_EVE = 'test-eve' // tenant_owner × G社 (starter)
+export const TEST_USER_GRACE = 'test-grace' // shop_owner × S社/shopS1 (pro)
+export const TEST_USER_HENRY = 'test-henry' // shop_staff × S社/shopS1 (pro)
+export const TEST_USER_IRIS = 'test-iris' // shop_owner × F社/shopF1 (basic)
+export const TEST_USER_KATE = 'test-kate' // shop_owner × G社/shopG1 (starter)
 
 // ─────────────────────────────────────────────
 // DB ヘルパー
@@ -57,55 +57,148 @@ export async function resetDb() {
   const pw = await hashPassword('password')
 
   // テナント
-  await db.insert(schema.tenants).values([
-    { id: TEST_TENANT_S_ID, name: 'テナントS社' },
-    { id: TEST_TENANT_F_ID, name: 'テナントF社' },
-    { id: TEST_TENANT_G_ID, name: 'テナントG社' },
-  ]).run()
+  await db
+    .insert(schema.tenants)
+    .values([
+      { id: TEST_TENANT_S_ID, name: 'テナントS社' },
+      { id: TEST_TENANT_F_ID, name: 'テナントF社' },
+      { id: TEST_TENANT_G_ID, name: 'テナントG社' },
+    ])
+    .run()
 
   // サブスクリプション
-  await db.insert(schema.subscriptions).values([
-    { id: 'sub-s', tenantId: TEST_TENANT_S_ID, plan: 'pro', status: 'active' },
-    { id: 'sub-f', tenantId: TEST_TENANT_F_ID, plan: 'basic', status: 'active' },
-    { id: 'sub-g', tenantId: TEST_TENANT_G_ID, plan: 'starter', status: 'active' },
-  ]).run()
+  await db
+    .insert(schema.subscriptions)
+    .values([
+      { id: 'sub-s', tenantId: TEST_TENANT_S_ID, plan: 'pro', status: 'active' },
+      { id: 'sub-f', tenantId: TEST_TENANT_F_ID, plan: 'basic', status: 'active' },
+      { id: 'sub-g', tenantId: TEST_TENANT_G_ID, plan: 'starter', status: 'active' },
+    ])
+    .run()
 
   // 店舗
-  await db.insert(schema.shops).values([
-    { id: TEST_SHOP_S1_ID, tenantId: TEST_TENANT_S_ID, name: 'S社 渋谷店' },
-    { id: 'test-shop-s2', tenantId: TEST_TENANT_S_ID, name: 'S社 新宿店' },
-    { id: TEST_SHOP_F1_ID, tenantId: TEST_TENANT_F_ID, name: 'F社 梅田店' },
-    { id: 'test-shop-f2', tenantId: TEST_TENANT_F_ID, name: 'F社 難波店' },
-    { id: TEST_SHOP_G1_ID, tenantId: TEST_TENANT_G_ID, name: 'G社 博多店' },
-  ]).run()
+  await db
+    .insert(schema.shops)
+    .values([
+      { id: TEST_SHOP_S1_ID, tenantId: TEST_TENANT_S_ID, name: 'S社 渋谷店' },
+      { id: 'test-shop-s2', tenantId: TEST_TENANT_S_ID, name: 'S社 新宿店' },
+      { id: TEST_SHOP_F1_ID, tenantId: TEST_TENANT_F_ID, name: 'F社 梅田店' },
+      { id: 'test-shop-f2', tenantId: TEST_TENANT_F_ID, name: 'F社 難波店' },
+      { id: TEST_SHOP_G1_ID, tenantId: TEST_TENANT_G_ID, name: 'G社 博多店' },
+    ])
+    .run()
 
   // ユーザー（role と tenantId を adminUsers に直接格納）
-  await db.insert(schema.adminUsers).values([
-    { id: TEST_USER_ALICE, email: 'alice@test.com', passwordHash: pw, tenantId: TEST_TENANT_S_ID, role: 'tenant_owner' },
-    { id: TEST_USER_BOB,   email: 'bob@test.com',   passwordHash: pw, tenantId: TEST_TENANT_S_ID, role: 'tenant_staff' },
-    { id: TEST_USER_EVE,   email: 'eve@test.com',   passwordHash: pw, tenantId: TEST_TENANT_G_ID, role: 'tenant_owner' },
-    { id: TEST_USER_GRACE, email: 'grace@test.com', passwordHash: pw, tenantId: TEST_TENANT_S_ID, role: 'shop_owner' },
-    { id: TEST_USER_HENRY, email: 'henry@test.com', passwordHash: pw, tenantId: TEST_TENANT_S_ID, role: 'shop_staff' },
-    { id: TEST_USER_IRIS,  email: 'iris@test.com',  passwordHash: pw, tenantId: TEST_TENANT_F_ID, role: 'shop_owner' },
-    { id: TEST_USER_KATE,  email: 'kate@test.com',  passwordHash: pw, tenantId: TEST_TENANT_G_ID, role: 'shop_owner' },
-  ]).run()
+  await db
+    .insert(schema.adminUsers)
+    .values([
+      {
+        id: TEST_USER_ALICE,
+        email: 'alice@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_S_ID,
+        role: 'tenant_owner',
+      },
+      {
+        id: TEST_USER_BOB,
+        email: 'bob@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_S_ID,
+        role: 'tenant_staff',
+      },
+      {
+        id: TEST_USER_EVE,
+        email: 'eve@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_G_ID,
+        role: 'tenant_owner',
+      },
+      {
+        id: TEST_USER_GRACE,
+        email: 'grace@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_S_ID,
+        role: 'shop_owner',
+      },
+      {
+        id: TEST_USER_HENRY,
+        email: 'henry@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_S_ID,
+        role: 'shop_staff',
+      },
+      {
+        id: TEST_USER_IRIS,
+        email: 'iris@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_F_ID,
+        role: 'shop_owner',
+      },
+      {
+        id: TEST_USER_KATE,
+        email: 'kate@test.com',
+        passwordHash: pw,
+        tenantId: TEST_TENANT_G_ID,
+        role: 'shop_owner',
+      },
+    ])
+    .run()
 
   // shop_assignments（role は adminUsers で管理するため不要）
-  await db.insert(schema.shopAssignments).values([
-    { id: 'sa-grace', userId: TEST_USER_GRACE, shopId: TEST_SHOP_S1_ID },
-    { id: 'sa-henry', userId: TEST_USER_HENRY, shopId: TEST_SHOP_S1_ID },
-    { id: 'sa-iris',  userId: TEST_USER_IRIS,  shopId: TEST_SHOP_F1_ID },
-    { id: 'sa-kate',  userId: TEST_USER_KATE,  shopId: TEST_SHOP_G1_ID },
-  ]).run()
+  await db
+    .insert(schema.shopAssignments)
+    .values([
+      { id: 'sa-grace', userId: TEST_USER_GRACE, shopId: TEST_SHOP_S1_ID },
+      { id: 'sa-henry', userId: TEST_USER_HENRY, shopId: TEST_SHOP_S1_ID },
+      { id: 'sa-iris', userId: TEST_USER_IRIS, shopId: TEST_SHOP_F1_ID },
+      { id: 'sa-kate', userId: TEST_USER_KATE, shopId: TEST_SHOP_G1_ID },
+    ])
+    .run()
 
   // 顧客（固定6件 + バルクで合計 10,000）+ purchase_histories
   const fixtureCustomers = [
-    { id: 'cust-s1-1', name: '田中一郎', email: 'tanaka@test.com', tag: 'VIP', memo: null as string | null },
-    { id: 'cust-s1-2', name: '佐藤花子', email: 'sato@test.com', tag: null, memo: null as string | null },
-    { id: 'cust-s2-1', name: '鈴木太郎', email: 'suzuki@test.com', tag: null, memo: null as string | null },
-    { id: 'cust-f1-1', name: '伊藤さくら', email: 'ito@test.com', tag: 'VIP', memo: null as string | null },
-    { id: 'cust-f1-2', name: '山本浩介', email: 'yamamoto@test.com', tag: null, memo: null as string | null },
-    { id: 'cust-g1-1', name: '小林悠介', email: 'kobayashi@test.com', tag: null, memo: null as string | null },
+    {
+      id: 'cust-s1-1',
+      name: '田中一郎',
+      email: 'tanaka@test.com',
+      tag: 'VIP',
+      memo: null as string | null,
+    },
+    {
+      id: 'cust-s1-2',
+      name: '佐藤花子',
+      email: 'sato@test.com',
+      tag: null,
+      memo: null as string | null,
+    },
+    {
+      id: 'cust-s2-1',
+      name: '鈴木太郎',
+      email: 'suzuki@test.com',
+      tag: null,
+      memo: null as string | null,
+    },
+    {
+      id: 'cust-f1-1',
+      name: '伊藤さくら',
+      email: 'ito@test.com',
+      tag: 'VIP',
+      memo: null as string | null,
+    },
+    {
+      id: 'cust-f1-2',
+      name: '山本浩介',
+      email: 'yamamoto@test.com',
+      tag: null,
+      memo: null as string | null,
+    },
+    {
+      id: 'cust-g1-1',
+      name: '小林悠介',
+      email: 'kobayashi@test.com',
+      tag: null,
+      memo: null as string | null,
+    },
   ] as const
 
   const BULK_TOTAL = 10_000 - fixtureCustomers.length
@@ -121,9 +214,15 @@ export async function resetDb() {
   /** D1 はステートメントあたり ~100 バインド程度（customers は実質 5 列×行） */
   const CUSTOMER_INSERT_CHUNK = 20
   for (let i = 0; i < bulkCustomers.length; i += CUSTOMER_INSERT_CHUNK) {
-    await db.insert(schema.customers).values(bulkCustomers.slice(i, i + CUSTOMER_INSERT_CHUNK)).run()
+    await db
+      .insert(schema.customers)
+      .values(bulkCustomers.slice(i, i + CUSTOMER_INSERT_CHUNK))
+      .run()
   }
-  await db.insert(schema.customers).values([...fixtureCustomers]).run()
+  await db
+    .insert(schema.customers)
+    .values([...fixtureCustomers])
+    .run()
 
   const fixturePh = [
     { id: 'ph-1', customerId: 'cust-s1-1', shopId: TEST_SHOP_S1_ID },
@@ -133,14 +232,21 @@ export async function resetDb() {
     { id: 'ph-5', customerId: 'cust-f1-2', shopId: TEST_SHOP_F1_ID },
     { id: 'ph-6', customerId: 'cust-g1-1', shopId: TEST_SHOP_G1_ID },
   ]
-  const bulkPh = bulkCustomers.map((c, i) => ({
-    id: ulid(),
-    customerId: c.id,
-    shopId: sShops[i % sShops.length]!,
-  }))
+  const bulkPh = bulkCustomers.map((c, i) => {
+    const shopId = sShops[i % sShops.length]
+    if (shopId === undefined) throw new Error('sShops is empty')
+    return {
+      id: ulid(),
+      customerId: c.id,
+      shopId,
+    }
+  })
   const PH_INSERT_CHUNK = 30
   for (let i = 0; i < bulkPh.length; i += PH_INSERT_CHUNK) {
-    await db.insert(schema.purchaseHistories).values(bulkPh.slice(i, i + PH_INSERT_CHUNK)).run()
+    await db
+      .insert(schema.purchaseHistories)
+      .values(bulkPh.slice(i, i + PH_INSERT_CHUNK))
+      .run()
   }
   await db.insert(schema.purchaseHistories).values(fixturePh).run()
 
@@ -150,11 +256,7 @@ export async function resetDb() {
 // ─────────────────────────────────────────────
 // JWT ヘルパー
 // ─────────────────────────────────────────────
-export async function createTestJwt(
-  userId: string,
-  role: Role,
-  tenantId: string,
-): Promise<string> {
+export async function createTestJwt(userId: string, role: Role, tenantId: string): Promise<string> {
   return sign({ sub: userId, role, tenantId }, TEST_JWT_SECRET, 'HS256')
 }
 
