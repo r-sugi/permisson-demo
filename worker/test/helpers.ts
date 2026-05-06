@@ -1,5 +1,6 @@
 import { env, SELF } from 'cloudflare:test'
 import { drizzle } from 'drizzle-orm/d1'
+import { eq } from 'drizzle-orm'
 import { sign } from 'hono/jwt'
 import { ulid } from 'ulidx'
 import { schema } from '../rdb/index'
@@ -251,6 +252,18 @@ export async function resetDb() {
   await db.insert(schema.purchaseHistories).values(fixturePh).run()
 
   return db
+}
+
+export async function setSubscriptionStatus(
+  tenantId: string,
+  status: 'active' | 'inactive',
+): Promise<void> {
+  const db = getDb()
+  await db
+    .update(schema.subscriptions)
+    .set({ status })
+    .where(eq(schema.subscriptions.tenantId, tenantId))
+    .run()
 }
 
 // ─────────────────────────────────────────────

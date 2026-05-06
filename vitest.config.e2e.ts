@@ -34,6 +34,19 @@ export default defineConfig(async () => {
       testTimeout: 60000,
       hookTimeout: 120000,
       setupFiles: ['./worker/test/apply-migrations.ts'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html', 'json-summary'],
+        include: ['worker/**/*.ts'],
+        exclude: [
+          '**/*.test.ts',
+          '**/*.e2e-spec.ts',
+          'worker/test/**',
+          'worker/cli/**',
+          'worker/rdb/migrations/**',
+          'worker/rdb/models/**',
+        ],
+      },
     },
   }
 })

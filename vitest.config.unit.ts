@@ -6,6 +6,19 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['worker/**/*.test.ts', 'shared/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      include: ['worker/**/*.ts', 'shared/**/*.ts'],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.e2e-spec.ts',
+        'worker/test/**',
+        'worker/cli/**',
+        'worker/rdb/migrations/**',
+        'worker/rdb/models/**',
+      ],
+    },
   },
   resolve: {
     alias: {
