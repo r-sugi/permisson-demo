@@ -1,9 +1,9 @@
 import type { CustomerScope } from '@shared/permission/scope/customer/scope'
 import { BaseCustomerScope } from '@shared/permission/scope/customer/scope'
-import { and, eq, exists, gt, inArray, type SQL } from 'drizzle-orm'
+import { and, asc, eq, exists, gt, inArray, sql } from 'drizzle-orm'
 import { schema } from '../rdb/index'
 import type { DrizzleDb } from '../services/database.service'
-import { type CustomerRowWithDisplay, customerRowsWithDisplayQuery } from './customer.repository'
+import { type CustomerRowWithDisplay, fetchCustomersWithDisplayForIds } from './customer.repository'
 
 const SQLITE_PARAM_LIMIT = 900
 
@@ -38,13 +38,6 @@ function shopsScopeExists(db: DrizzleDb, userId: string) {
   )
 }
 
-function customerWhere(scopeSql: SQL, cursor: string | null): SQL {
-  if (!cursor) return scopeSql
-  const combined = and(scopeSql, gt(schema.customers.id, cursor))
-  if (combined === undefined) throw new Error('customerWhere: combined predicate is undefined')
-  return combined
-}
-
 class TenantCustomerScope extends BaseCustomerScope {
   constructor(
     private readonly tenantId: string,
@@ -54,8 +47,21 @@ class TenantCustomerScope extends BaseCustomerScope {
   }
 
   async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRowWithDisplay[]> {
-    const scopePred = tenantScopeExists(this.db, this.tenantId)
-    return customerRowsWithDisplayQuery(this.db, customerWhere(scopePred, cursor), limit).all()
+    const idRows = await this.db
+      .select({ id: schema.purchaseHistories.customerId })
+      .from(schema.purchaseHistories)
+      .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
+      .where(
+        cursor
+          ? and(eq(schema.shops.tenantId, this.tenantId), gt(schema.purchaseHistories.customerId, cursor))
+          : eq(schema.shops.tenantId, this.tenantId),
+      )
+      .groupBy(schema.purchaseHistories.customerId)
+      .orderBy(asc(schema.purchaseHistories.customerId))
+      .limit(limit)
+      .all()
+    const ids = idRows.map((r) => r.id)
+    return fetchCustomersWithDisplayForIds(this.db, ids)
   }
 
   async isCustomerInScope(customerId: string): Promise<boolean> {
@@ -89,6 +95,18 @@ class TenantCustomerScope extends BaseCustomerScope {
     }
     return [...out]
   }
+
+  async countCustomers(): Promise<number> {
+    const row = await this.db
+      .select({
+        n: sql<number>`count(distinct ${schema.purchaseHistories.customerId})`.mapWith(Number),
+      })
+      .from(schema.purchaseHistories)
+      .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
+      .where(eq(schema.shops.tenantId, this.tenantId))
+      .get()
+    return row?.n ?? 0
+  }
 }
 
 class ShopsCustomerScope extends BaseCustomerScope {
@@ -100,8 +118,26 @@ class ShopsCustomerScope extends BaseCustomerScope {
   }
 
   async findCustomerRows(cursor: string | null, limit: number): Promise<CustomerRowWithDisplay[]> {
-    const scopePred = shopsScopeExists(this.db, this.userId)
-    return customerRowsWithDisplayQuery(this.db, customerWhere(scopePred, cursor), limit).all()
+    const qb = this.db
+      .select({ id: schema.purchaseHistories.customerId })
+      .from(schema.purchaseHistories)
+      .innerJoin(
+        schema.shopAssignments,
+        and(
+          eq(schema.shopAssignments.shopId, schema.purchaseHistories.shopId),
+          eq(schema.shopAssignments.userId, this.userId),
+        ),
+      )
+    const idRows = await (cursor
+      ? qb.where(gt(schema.purchaseHistories.customerId, cursor))
+      : qb
+    )
+      .groupBy(schema.purchaseHistories.customerId)
+      .orderBy(asc(schema.purchaseHistories.customerId))
+      .limit(limit)
+      .all()
+    const ids = idRows.map((r) => r.id)
+    return fetchCustomersWithDisplayForIds(this.db, ids)
   }
 
   async isCustomerInScope(customerId: string): Promise<boolean> {
@@ -134,6 +170,23 @@ class ShopsCustomerScope extends BaseCustomerScope {
       for (const r of rows) out.add(r.id)
     }
     return [...out]
+  }
+
+  async countCustomers(): Promise<number> {
+    const row = await this.db
+      .select({
+        n: sql<number>`count(distinct ${schema.purchaseHistories.customerId})`.mapWith(Number),
+      })
+      .from(schema.purchaseHistories)
+      .innerJoin(
+        schema.shopAssignments,
+        and(
+          eq(schema.shopAssignments.shopId, schema.purchaseHistories.shopId),
+          eq(schema.shopAssignments.userId, this.userId),
+        ),
+      )
+      .get()
+    return row?.n ?? 0
   }
 }
 

@@ -1,7 +1,7 @@
-import { and, eq, sql } from 'drizzle-orm'
-import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
-import { schema } from '../rdb/index'
 import type { PurchaseHistoryRepository as PurchaseHistoryRepositoryPort } from '@shared/permission/scope/resolver-types'
+import { and, eq, inArray, sql } from 'drizzle-orm'
+import { schema } from '../rdb/index'
+import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 
 export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort {
   constructor(private readonly db: DrizzleDb) {}
@@ -21,6 +21,29 @@ export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort 
       .get()
     if (!row) return null
     return { shopId: row.shopId }
+  }
+
+  /** 店舗ごとのユニーク顧客数（purchase_histories 経由） */
+  async countDistinctCustomersByShopIds(shopIds: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>()
+    if (shopIds.length === 0) return map
+    const limit = 900
+    for (let i = 0; i < shopIds.length; i += limit) {
+      const chunk = shopIds.slice(i, i + limit)
+      const rows = await this.db
+        .select({
+          shopId: schema.purchaseHistories.shopId,
+          n: sql<number>`count(distinct ${schema.purchaseHistories.customerId})`.mapWith(Number),
+        })
+        .from(schema.purchaseHistories)
+        .where(inArray(schema.purchaseHistories.shopId, chunk))
+        .groupBy(schema.purchaseHistories.shopId)
+        .all()
+      for (const r of rows) {
+        map.set(r.shopId, r.n)
+      }
+    }
+    return map
   }
 
   async evaluateCustomerShopAccess(

@@ -1,20 +1,26 @@
+import { POLICY_MAP } from '@shared/permission/policy/context'
+import type { AuthContext } from '@shared/permission/types'
+import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
 import { HTTPException } from 'hono/http-exception'
 import { ulid } from 'ulidx'
-import type { AuthContext } from '@shared/permission/types'
-import { POLICY_MAP } from '@shared/permission/policy/context'
-import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
-import type { ShopAccessRepository } from '../repository/shop-access.repository'
+import type { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
 import type { ShopRepository } from '../repository/shop.repository'
+import type { ShopAccessRepository } from '../repository/shop-access.repository'
 
 export class ShopUseCase {
   constructor(
     private readonly shopRepo: ShopRepository,
     private readonly shopAccess: ShopAccessRepository,
+    private readonly purchaseHistoryRepo: PurchaseHistoryRepository,
     private readonly auth: AuthContext,
   ) {}
 
   async listShops() {
-    return this.shopAccess.listAccessible()
+    const shops = await this.shopAccess.listAccessible()
+    const counts = await this.purchaseHistoryRepo.countDistinctCustomersByShopIds(
+      shops.map((s) => s.id),
+    )
+    return shops.map((s) => ({ ...s, customerCount: counts.get(s.id) ?? 0 }))
   }
 
   async createShop(tenantId: string, name: string) {

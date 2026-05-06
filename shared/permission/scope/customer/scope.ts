@@ -4,12 +4,15 @@ export interface CustomerScope {
   findCustomerRows(cursor: string | null, limit: number): Promise<unknown[]>
   isCustomerInScope(customerId: string): Promise<boolean>
   validateCustomerIds(customerIds: string[]): Promise<string[]>
+  /** 一覧・エクスポートと同一のスコープでの顧客件数 */
+  countCustomers(): Promise<number>
 }
 
 export abstract class BaseCustomerScope implements CustomerScope {
   abstract findCustomerRows(cursor: string | null, limit: number): Promise<unknown[]>
   abstract isCustomerInScope(customerId: string): Promise<boolean>
   abstract filterAccessibleIds(customerIds: string[]): Promise<string[]>
+  abstract countCustomers(): Promise<number>
 
   async validateCustomerIds(customerIds: string[]): Promise<string[]> {
     const unique = [...new Set(customerIds)]

@@ -1,10 +1,10 @@
-import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
-import { z } from 'zod'
-import type { HonoEnv } from '../type'
-import { CustomerId, ShopId } from '@shared/permission/types'
 import { useResolver } from '@shared/permission/scope/resolver-map'
+import { CustomerId, ShopId } from '@shared/permission/types'
+import { Hono } from 'hono'
+import { z } from 'zod'
 import { authorize } from '../middleware/authorize'
+import type { HonoEnv } from '../type'
 
 // Gate2 relation: 単一リソース ID または POST body の shopId。一覧・エクスポートは CustomerRepository のスコープに委ねる。
 
@@ -38,6 +38,12 @@ type CustomerIdInput = {
 }
 
 export const customerRoutes = new Hono<HonoEnv>()
+
+  // GET /api/customers/summary - スコープ内の顧客総件数（一覧と同一条件）
+  .get('/summary', authorize({ policy: { target: 'customer', action: 'read' } }), async (c) => {
+    const summary = await c.get('useCase').customer.summaryCustomers()
+    return c.json(summary)
+  })
 
   // GET /api/customers - 顧客一覧（スコープ解決済み・カーソルページネーション）
   .get(

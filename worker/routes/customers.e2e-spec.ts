@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  resetDb,
-  createTestJwt,
   authedFetch,
   authedJsonFetch,
+  createTestJwt,
+  resetDb,
+  TEST_SHOP_G1_ID,
+  TEST_SHOP_S1_ID,
+  TEST_TENANT_G_ID,
+  TEST_TENANT_S_ID,
   TEST_USER_ALICE,
   TEST_USER_BOB,
   TEST_USER_EVE,
   TEST_USER_GRACE,
   TEST_USER_HENRY,
   TEST_USER_IRIS,
-  TEST_TENANT_S_ID,
-  TEST_TENANT_G_ID,
-  TEST_SHOP_S1_ID,
-  TEST_SHOP_G1_ID,
 } from '../test/helpers'
 
 /** authorize の PBAC 403 本文（JSON またはプレーンテキスト） */
@@ -82,6 +82,32 @@ describe('GET /api/customers - スコープ解決', () => {
   it('401: JWTなしで認証エラー', async () => {
     const res = await authedFetch('/api/customers', '')
     expect(res.status).toBe(401)
+  })
+})
+
+describe('GET /api/customers/summary - スコープ内件数', () => {
+  beforeEach(() => resetDb())
+
+  it('tenant_owner(S社/pro): totalInScope は一覧スコープと一致する総件数', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/summary', token)
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { totalInScope: number }
+    expect(body.totalInScope).toBe(9997)
+  })
+
+  it('tenant_owner(G社/starter): totalInScope は 1', async () => {
+    const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
+    const res = await authedFetch('/api/customers/summary', token)
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { totalInScope: number }
+    expect(body.totalInScope).toBe(1)
+  })
+
+  it('shop_staff: 403 (customer.read = false)', async () => {
+    const token = await createTestJwt(TEST_USER_HENRY, 'shop_staff', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/summary', token)
+    await expectPermissionDenied(res, 'customer.read')
   })
 })
 

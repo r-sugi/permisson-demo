@@ -1,6 +1,5 @@
 import type { CustomerScope } from '@shared/permission/scope/customer/scope'
-import type { SQL } from 'drizzle-orm'
-import { asc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { schema } from '../rdb/index'
 import type { CustomerRow } from '../rdb/models/customers'
@@ -10,14 +9,18 @@ import { UserRelationRepository } from './user-relation.repository'
 
 const EXPORT_PAGE_SIZE = 500
 
-/** PH が複数あるときは `min(id)` で代表行を 1 件に寄せる（シード・作成フローでは実質 1 件） */
-function phFirstPickSubquery(db: DrizzleDb) {
+/** SQLite の変数上限対策（サブクエリ結合時にプレースホルダが重複しやすいため控えめに） */
+const FETCH_DISPLAY_CHUNK = 80
+
+/** 指定顧客 ID のみに対し、全履歴上の `min(id)` で代表 PH を選ぶ（一覧・単体取得で共通） */
+function phFirstPickForCustomerIds(db: DrizzleDb, customerIds: string[]) {
   return db
     .select({
       customerId: schema.purchaseHistories.customerId,
       pickPhId: sql<string>`min(${schema.purchaseHistories.id})`.as('pickPhId'),
     })
     .from(schema.purchaseHistories)
+    .where(inArray(schema.purchaseHistories.customerId, customerIds))
     .groupBy(schema.purchaseHistories.customerId)
     .as('ph_first')
 }
@@ -29,41 +32,44 @@ export type CustomerRowWithDisplay = CustomerRow & {
 /** `{顧客名} {テナント名}-{店舗名}`（店舗名が `{テナント名} ` で始まる場合は重複を除く）を SELECT 時に算出 */
 const customerWithDisplaySelection = {
   ...getTableColumns(schema.customers),
-  displayName: sql<string>`${schema.customers.name} || ' ' || ${schema.tenants.name} || '-' || CASE WHEN ${
-    schema.shops.name
-  } LIKE ${schema.tenants.name} || ' %' THEN SUBSTR(${schema.shops.name}, LENGTH(${schema.tenants.name}) + 2) ELSE ${
-    schema.shops.name
-  } END`
-    .mapWith(String)
-    .as('displayName'),
+  displayName:
+    sql<string>`${schema.customers.name} || ' ' || ${schema.tenants.name} || '-' || CASE WHEN ${
+      schema.shops.name
+    } LIKE ${schema.tenants.name} || ' %' THEN SUBSTR(${schema.shops.name}, LENGTH(${schema.tenants.name}) + 2) ELSE ${
+      schema.shops.name
+    } END`
+      .mapWith(String)
+      .as('displayName'),
 } satisfies Record<string, unknown>
 
-/** スコープ WHERE 付きの一覧用クエリ（customer-scope から利用） */
-export function customerRowsWithDisplayQuery(db: DrizzleDb, whereClause: SQL, limit: number) {
-  const phFirst = phFirstPickSubquery(db)
-  return db
-    .select(customerWithDisplaySelection)
-    .from(schema.customers)
-    .innerJoin(phFirst, eq(schema.customers.id, phFirst.customerId))
-    .innerJoin(schema.purchaseHistories, eq(schema.purchaseHistories.id, phFirst.pickPhId))
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
-    .innerJoin(schema.tenants, eq(schema.tenants.id, schema.shops.tenantId))
-    .where(whereClause)
-    .orderBy(asc(schema.customers.id))
-    .limit(limit)
+/** 顧客 ID 一覧に対し displayName 付き行を返す（入力順を維持） */
+export async function fetchCustomersWithDisplayForIds(
+  db: DrizzleDb,
+  customerIds: string[],
+): Promise<CustomerRowWithDisplay[]> {
+  if (customerIds.length === 0) return []
+  const orderMap = new Map(customerIds.map((id, i) => [id, i]))
+  const rows: CustomerRowWithDisplay[] = []
+  for (let i = 0; i < customerIds.length; i += FETCH_DISPLAY_CHUNK) {
+    const chunk = customerIds.slice(i, i + FETCH_DISPLAY_CHUNK)
+    const phFirst = phFirstPickForCustomerIds(db, chunk)
+    const part = await db
+      .select(customerWithDisplaySelection)
+      .from(schema.customers)
+      .innerJoin(phFirst, eq(schema.customers.id, phFirst.customerId))
+      .innerJoin(schema.purchaseHistories, eq(schema.purchaseHistories.id, phFirst.pickPhId))
+      .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
+      .innerJoin(schema.tenants, eq(schema.tenants.id, schema.shops.tenantId))
+      .all()
+    rows.push(...part)
+  }
+  rows.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0))
+  return rows
 }
 
-function getCustomerWithDisplayById(db: DrizzleDb, customerId: string) {
-  const phFirst = phFirstPickSubquery(db)
-  return db
-    .select(customerWithDisplaySelection)
-    .from(schema.customers)
-    .innerJoin(phFirst, eq(schema.customers.id, phFirst.customerId))
-    .innerJoin(schema.purchaseHistories, eq(schema.purchaseHistories.id, phFirst.pickPhId))
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
-    .innerJoin(schema.tenants, eq(schema.tenants.id, schema.shops.tenantId))
-    .where(eq(schema.customers.id, customerId))
-    .get()
+async function getCustomerWithDisplayById(db: DrizzleDb, customerId: string) {
+  const rows = await fetchCustomersWithDisplayForIds(db, [customerId])
+  return rows[0]
 }
 
 export class CustomerRepository {
@@ -89,6 +95,12 @@ export class CustomerRepository {
       this.scopeCache = createCustomerScope(resolution, this.db)
     }
     return this.scopeCache
+  }
+
+  /** 一覧・CSV と同一スコープの顧客総件数 */
+  async countInScope(): Promise<number> {
+    const scope = await this.resolveScope()
+    return scope.countCustomers()
   }
 
   /**

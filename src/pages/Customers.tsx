@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Permission } from '@/components/Permission'
 import { PermissionPanel } from '@/components/PermissionPanel'
 import { apiClient, parseJson } from '@/lib/apiClient'
+import { usePermissionContext } from '@/providers/permission/permissionContext'
 
 type Customer = {
   id: string
@@ -35,6 +36,7 @@ type CustomerPage = {
 }
 
 export function CustomersPage() {
+  const { me } = usePermissionContext()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   /** 現在のページ取得時にクエリへ渡した cursor（先頭ページは null） */
@@ -45,7 +47,7 @@ export function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [errorStatus, setErrorStatus] = useState<number | null>(null)
-  const [_refreshKey, setRefreshKey] = useState(0)
+  const [scopeCustomerTotal, setScopeCustomerTotal] = useState<number | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newCustomer, setNewCustomer] = useState({
     name: '',
@@ -87,9 +89,20 @@ export function CustomersPage() {
     }
   }, [])
 
-  useEffect(() => {
-    void fetchPage(null, true)
+  const reloadListAndSummary = useCallback(async () => {
+    await fetchPage(null, true)
+    try {
+      const res = await apiClient.api.customers.summary.$get()
+      const data = await parseJson<{ totalInScope: number }>(res)
+      setScopeCustomerTotal(data.totalInScope)
+    } catch {
+      setScopeCustomerTotal(null)
+    }
   }, [fetchPage])
+
+  useEffect(() => {
+    void reloadListAndSummary()
+  }, [reloadListAndSummary])
 
   const handleNextPage = async () => {
     if (!nextCursor) return
@@ -135,7 +148,7 @@ export function CustomersPage() {
       await parseJson(postRes)
       setNewCustomer({ name: '', email: '', shopId: '', tag: '', memo: '' })
       setShowCreateForm(false)
-      setRefreshKey((k) => k + 1) // mutation 後リフェッチ
+      await reloadListAndSummary()
     } catch (err) {
       alert((err as Error).message)
     } finally {
@@ -150,7 +163,7 @@ export function CustomersPage() {
         param: { id: customerId },
       })
       await parseJson(delRes)
-      setRefreshKey((k) => k + 1) // mutation 後リフェッチ
+      await reloadListAndSummary()
     } catch (err) {
       alert((err as Error).message)
     }
@@ -173,7 +186,7 @@ export function CustomersPage() {
       })
       await parseJson(patchRes)
       setEditId(null)
-      setRefreshKey((k) => k + 1) // mutation 後リフェッチ
+      await reloadListAndSummary()
     } catch (err) {
       alert((err as Error).message)
     }
@@ -208,6 +221,17 @@ export function CustomersPage() {
 
       <PermissionPanel items={PANEL_ITEMS} title="customer.* 権限" />
 
+      {scopeCustomerTotal !== null && (
+        <div className="mb-4 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700">
+          <span className="font-medium text-slate-800">{me?.tenantName ?? 'テナント'}</span>
+          のスコープ内の顧客は{' '}
+          <strong className="tabular-nums text-slate-900">
+            {scopeCustomerTotal.toLocaleString('ja-JP')}
+          </strong>{' '}
+          件です。
+        </div>
+      )}
+
       {/* ツールバー */}
       <div className="flex items-center gap-3 mb-4">
         <Permission target="customer" action="create">
@@ -241,7 +265,7 @@ export function CustomersPage() {
 
         <button
           type="button"
-          onClick={() => setRefreshKey((k) => k + 1)}
+          onClick={() => void reloadListAndSummary()}
           className="ml-auto text-gray-500 hover:text-gray-700 text-sm px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
         >
           ↻ 再読み込み

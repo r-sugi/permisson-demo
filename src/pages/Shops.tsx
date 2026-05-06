@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Permission } from '@/components/Permission'
 import { PermissionPanel } from '@/components/PermissionPanel'
-import { usePermission } from '@/providers/permission/usePermission'
 import { apiClient, parseJson } from '@/lib/apiClient'
+import { usePermission } from '@/providers/permission/usePermission'
 
 type Shop = {
   id: string
   tenantId: string
   name: string
   createdAt: string
+  customerCount: number
 }
 
 const PANEL_ITEMS = [
@@ -223,6 +224,7 @@ export function ShopsPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-gray-600 font-medium">店舗名</th>
                 <th className="px-4 py-3 text-left text-gray-600 font-medium">テナントID</th>
+                <th className="px-4 py-3 text-right text-gray-600 font-medium">顧客数</th>
                 <th className="px-4 py-3 text-left text-gray-600 font-medium">作成日時</th>
                 <th className="px-4 py-3 text-center text-gray-600 font-medium">操作</th>
               </tr>
@@ -233,6 +235,9 @@ export function ShopsPage() {
                   <td className="px-4 py-3 font-medium text-gray-800">{shop.name}</td>
                   <td className="px-4 py-3 text-gray-400 text-xs font-mono">
                     {shop.tenantId.slice(0, 8)}...
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-gray-800 font-medium">
+                    {shop.customerCount.toLocaleString('ja-JP')}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{shop.createdAt}</td>
                   <td className="px-4 py-3 text-center">

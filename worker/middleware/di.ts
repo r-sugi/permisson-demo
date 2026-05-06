@@ -1,11 +1,11 @@
 import type { Context, Next } from 'hono'
-import type { HonoEnv } from '../type'
 import { CustomerRepository } from '../repository/customer.repository'
-import { ShopAssignmentRepository } from '../repository/shop-assignment.repository'
-import { ShopAccessRepository } from '../repository/shop-access.repository'
-import { ShopRepository } from '../repository/shop.repository'
-import { UserRelationRepository } from '../repository/user-relation.repository'
 import { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
+import { ShopRepository } from '../repository/shop.repository'
+import { ShopAccessRepository } from '../repository/shop-access.repository'
+import { ShopAssignmentRepository } from '../repository/shop-assignment.repository'
+import { UserRelationRepository } from '../repository/user-relation.repository'
+import type { HonoEnv } from '../type'
 import { CustomerUseCase } from '../usecase/customer.usecase'
 import { ShopUseCase } from '../usecase/shop.usecase'
 
@@ -29,7 +29,7 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
 
   c.set('useCase', {
     customer: new CustomerUseCase(customerRepo, purchaseHistoryRepo, db, shopRepo, auth),
-    shop: new ShopUseCase(shopRepo, shopAccessRepo, auth),
+    shop: new ShopUseCase(shopRepo, shopAccessRepo, purchaseHistoryRepo, auth),
   })
 
   await next()

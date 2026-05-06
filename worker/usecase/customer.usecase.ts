@@ -1,6 +1,6 @@
+import type { AuthContext } from '@shared/permission/types'
 import { HTTPException } from 'hono/http-exception'
 import { ulid } from 'ulidx'
-import type { AuthContext } from '@shared/permission/types'
 import type { CustomerRepository } from '../repository/customer.repository'
 import type { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
 import type { ShopRepository } from '../repository/shop.repository'
@@ -17,6 +17,11 @@ export class CustomerUseCase {
 
   async listCustomers(cursor: string | null | undefined, limit: number) {
     return this.customerRepo.findPage(cursor ?? null, limit)
+  }
+
+  async summaryCustomers() {
+    const totalInScope = await this.customerRepo.countInScope()
+    return { totalInScope }
   }
 
   async getCustomer(customerId: string) {

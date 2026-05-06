@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  resetDb,
-  createTestJwt,
   authedFetch,
   authedJsonFetch,
+  createTestJwt,
+  resetDb,
+  TEST_SHOP_G1_ID,
+  TEST_SHOP_S1_ID,
+  TEST_TENANT_G_ID,
+  TEST_TENANT_S_ID,
   TEST_USER_ALICE,
   TEST_USER_BOB,
   TEST_USER_EVE,
   TEST_USER_GRACE,
   TEST_USER_HENRY,
   TEST_USER_KATE,
-  TEST_TENANT_S_ID,
-  TEST_TENANT_G_ID,
-  TEST_SHOP_S1_ID,
-  TEST_SHOP_G1_ID,
 } from '../test/helpers'
 
 describe('GET /api/shops - 店舗一覧', () => {
@@ -25,6 +25,17 @@ describe('GET /api/shops - 店舗一覧', () => {
     expect(res.status).toBe(200)
     const body = (await res.json()) as unknown[]
     expect(body).toHaveLength(2) // S社 渋谷店 + 新宿店
+  })
+
+  it('tenant_owner(S社): 店舗の customerCount 合計は /api/customers/summary と一致', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const shopsRes = await authedFetch('/api/shops', token)
+    const shops = (await shopsRes.json()) as { customerCount: number }[]
+    const sumShops = shops.reduce((acc, s) => acc + s.customerCount, 0)
+    const sumRes = await authedFetch('/api/customers/summary', token)
+    expect(sumRes.status).toBe(200)
+    const { totalInScope } = (await sumRes.json()) as { totalInScope: number }
+    expect(sumShops).toBe(totalInScope)
   })
 
   it('shop_owner(S社/渋谷店): 担当店舗のみ1件', async () => {
