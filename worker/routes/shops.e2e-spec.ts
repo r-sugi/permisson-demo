@@ -1,8 +1,10 @@
+import { SELF } from 'cloudflare:test'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   authedFetch,
   authedJsonFetch,
   createTestJwt,
+  getDb,
   resetDb,
   TEST_SHOP_G1_ID,
   TEST_SHOP_S1_ID,
@@ -15,6 +17,7 @@ import {
   TEST_USER_HENRY,
   TEST_USER_KATE,
 } from '../test/helpers'
+import { schema } from '../rdb/index'
 
 describe('GET /api/shops - 店舗一覧', () => {
   beforeEach(() => resetDb())
@@ -60,6 +63,11 @@ describe('GET /api/shops - 店舗一覧', () => {
     expect(res.status).toBe(200)
     const body = (await res.json()) as unknown[]
     expect(body).toHaveLength(1) // G社 博多店のみ
+  })
+
+  it('401: JWTなしで認証エラー', async () => {
+    const res = await SELF.fetch('http://localhost/api/shops')
+    expect(res.status).toBe(401)
   })
 })
 
@@ -115,6 +123,35 @@ describe('POST /api/tenants/:tenantId/shops - 店舗作成', () => {
       name: 'G社 追加店舗',
     })
     expect(res.status).toBe(201)
+  })
+
+  it('400: バリデーションエラー（name が空）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_S_ID}/shops`, token, 'POST', {
+      name: '',
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('422: starter は 5 店舗まで（上限超過で 422）', async () => {
+    const db = getDb()
+    await db
+      .insert(schema.shops)
+      .values([
+        { id: 'test-shop-g2', tenantId: TEST_TENANT_G_ID, name: 'G社 追加店2' },
+        { id: 'test-shop-g3', tenantId: TEST_TENANT_G_ID, name: 'G社 追加店3' },
+        { id: 'test-shop-g4', tenantId: TEST_TENANT_G_ID, name: 'G社 追加店4' },
+        { id: 'test-shop-g5', tenantId: TEST_TENANT_G_ID, name: 'G社 追加店5' },
+      ])
+      .run()
+
+    const token = await createTestJwt(TEST_USER_EVE, 'tenant_owner', TEST_TENANT_G_ID)
+    const res = await authedJsonFetch(`/api/tenants/${TEST_TENANT_G_ID}/shops`, token, 'POST', {
+      name: 'G社 追加店6',
+    })
+    expect(res.status).toBe(422)
+    const body = (await res.json()) as { message?: string }
+    expect(body.message).toContain('店舗作成上限（5件）に達しています')
   })
 
   it('tenant_staff(S社/pro): 201 で店舗作成（PBAC は tenant_owner と同等）', async () => {

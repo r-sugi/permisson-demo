@@ -125,60 +125,38 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
 
     const pw = await hashPassword('password')
 
-    // ─── テナント ───
-    const tenantA = ulid() // A社 (pro)
-    const tenantA_basic = ulid() // A社 (basic)
-    const tenantA_starter = ulid() // A社 (starter)
-    const tenantB = ulid() // B社 (basic)
-    const tenantB_pro = ulid() // B社 (pro)
-    const tenantB_starter = ulid() // B社 (starter)
+    // ─── テナント（社名単位で 1 行。プランは admin_users.plan および課金レコードで表現）───
+    const tenantA = ulid()
+    const tenantB = ulid()
 
     await db
       .insert(schema.tenants)
       .values([
         { id: tenantA, name: 'A社' },
-        { id: tenantA_basic, name: 'A社' },
-        { id: tenantA_starter, name: 'A社' },
         { id: tenantB, name: 'B社' },
-        { id: tenantB_pro, name: 'B社' },
-        { id: tenantB_starter, name: 'B社' },
       ])
       .run()
 
-    // ─── サブスクリプション ───
     await db
       .insert(schema.subscriptions)
       .values([
         { id: ulid(), tenantId: tenantA, plan: 'pro', status: 'active' },
-        { id: ulid(), tenantId: tenantA_basic, plan: 'basic', status: 'active' },
-        { id: ulid(), tenantId: tenantA_starter, plan: 'starter', status: 'active' },
-        { id: ulid(), tenantId: tenantB, plan: 'basic', status: 'active' },
-        { id: ulid(), tenantId: tenantB_pro, plan: 'pro', status: 'active' },
-        { id: ulid(), tenantId: tenantB_starter, plan: 'starter', status: 'active' },
+        { id: ulid(), tenantId: tenantB, plan: 'pro', status: 'active' },
       ])
       .run()
 
-    // ─── 店舗 ───
-    const shopA1 = ulid() // A社(pro) 渋谷店
-    const shopA2 = ulid() // A社(pro) 新宿店
-    const shopA_basic1 = ulid() // A社(basic) 渋谷店
-    const shopA_starter1 = ulid() // A社(starter) 渋谷店
-    const shopB1 = ulid() // B社(basic) 梅田店
-    const shopB2 = ulid() // B社(basic) 難波店
-    const shopB_pro1 = ulid() // B社(pro) 梅田店
-    const shopB_starter1 = ulid() // B社(starter) 梅田店
+    const shopA1 = ulid() // A社 渋谷店
+    const shopA2 = ulid() // A社 新宿店
+    const shopB1 = ulid() // B社 梅田店
+    const shopB2 = ulid() // B社 難波店
 
     await db
       .insert(schema.shops)
       .values([
         { id: shopA1, tenantId: tenantA, name: 'A社 渋谷店' },
         { id: shopA2, tenantId: tenantA, name: 'A社 新宿店' },
-        { id: shopA_basic1, tenantId: tenantA_basic, name: 'A社 渋谷店' },
-        { id: shopA_starter1, tenantId: tenantA_starter, name: 'A社 渋谷店' },
         { id: shopB1, tenantId: tenantB, name: 'B社 梅田店' },
         { id: shopB2, tenantId: tenantB, name: 'B社 難波店' },
-        { id: shopB_pro1, tenantId: tenantB_pro, name: 'B社 梅田店' },
-        { id: shopB_starter1, tenantId: tenantB_starter, name: 'B社 梅田店' },
       ])
       .run()
 
@@ -224,6 +202,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantA,
           role: 'tenant_owner',
+          plan: 'pro',
         },
         {
           id: userBob,
@@ -231,6 +210,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantA,
           role: 'tenant_staff',
+          plan: 'pro',
         },
         {
           id: userGrace,
@@ -238,6 +218,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantA,
           role: 'shop_owner',
+          plan: 'pro',
         },
         {
           id: userHenry,
@@ -245,34 +226,39 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantA,
           role: 'shop_staff',
+          plan: 'pro',
         },
         {
           id: userEve,
           email: 'eve@example.com',
           passwordHash: pw,
-          tenantId: tenantA_basic,
+          tenantId: tenantA,
           role: 'tenant_owner',
+          plan: 'basic',
         },
         {
           id: userFrank,
           email: 'frank@example.com',
           passwordHash: pw,
-          tenantId: tenantA_basic,
+          tenantId: tenantA,
           role: 'tenant_staff',
+          plan: 'basic',
         },
         {
           id: userNora,
           email: 'nora@example.com',
           passwordHash: pw,
-          tenantId: tenantA_basic,
+          tenantId: tenantA,
           role: 'shop_owner',
+          plan: 'basic',
         },
         {
           id: userOliver,
           email: 'oliver@example.com',
           passwordHash: pw,
-          tenantId: tenantA_basic,
+          tenantId: tenantA,
           role: 'shop_staff',
+          plan: 'basic',
         },
       ])
       .run()
@@ -283,29 +269,33 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           id: userPaul,
           email: 'paul@example.com',
           passwordHash: pw,
-          tenantId: tenantA_starter,
+          tenantId: tenantA,
           role: 'tenant_owner',
+          plan: 'starter',
         },
         {
           id: userQuinn,
           email: 'quinn@example.com',
           passwordHash: pw,
-          tenantId: tenantA_starter,
+          tenantId: tenantA,
           role: 'tenant_staff',
+          plan: 'starter',
         },
         {
           id: userRachel,
           email: 'rachel@example.com',
           passwordHash: pw,
-          tenantId: tenantA_starter,
+          tenantId: tenantA,
           role: 'shop_owner',
+          plan: 'starter',
         },
         {
           id: userSam,
           email: 'sam@example.com',
           passwordHash: pw,
-          tenantId: tenantA_starter,
+          tenantId: tenantA,
           role: 'shop_staff',
+          plan: 'starter',
         },
         {
           id: userCharlie,
@@ -313,6 +303,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantB,
           role: 'tenant_owner',
+          plan: 'basic',
         },
         {
           id: userDiana,
@@ -320,6 +311,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantB,
           role: 'tenant_staff',
+          plan: 'basic',
         },
         {
           id: userIris,
@@ -327,6 +319,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantB,
           role: 'shop_owner',
+          plan: 'basic',
         },
         {
           id: userJack,
@@ -334,6 +327,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           passwordHash: pw,
           tenantId: tenantB,
           role: 'shop_staff',
+          plan: 'basic',
         },
       ])
       .run()
@@ -344,57 +338,65 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           id: userTom,
           email: 'tom@example.com',
           passwordHash: pw,
-          tenantId: tenantB_pro,
+          tenantId: tenantB,
           role: 'tenant_owner',
+          plan: 'pro',
         },
         {
           id: userUma,
           email: 'uma@example.com',
           passwordHash: pw,
-          tenantId: tenantB_pro,
+          tenantId: tenantB,
           role: 'tenant_staff',
+          plan: 'pro',
         },
         {
           id: userVictor,
           email: 'victor@example.com',
           passwordHash: pw,
-          tenantId: tenantB_pro,
+          tenantId: tenantB,
           role: 'shop_owner',
+          plan: 'pro',
         },
         {
           id: userWendy,
           email: 'wendy@example.com',
           passwordHash: pw,
-          tenantId: tenantB_pro,
+          tenantId: tenantB,
           role: 'shop_staff',
+          plan: 'pro',
         },
         {
           id: userXavier,
           email: 'xavier@example.com',
           passwordHash: pw,
-          tenantId: tenantB_starter,
+          tenantId: tenantB,
           role: 'tenant_owner',
+          plan: 'starter',
         },
         {
           id: userYara,
           email: 'yara@example.com',
           passwordHash: pw,
-          tenantId: tenantB_starter,
+          tenantId: tenantB,
           role: 'tenant_staff',
+          plan: 'starter',
         },
         {
           id: userZoe,
           email: 'zoe@example.com',
           passwordHash: pw,
-          tenantId: tenantB_starter,
+          tenantId: tenantB,
           role: 'shop_owner',
+          plan: 'starter',
         },
         {
           id: userAlex,
           email: 'alex@example.com',
           passwordHash: pw,
-          tenantId: tenantB_starter,
+          tenantId: tenantB,
           role: 'shop_staff',
+          plan: 'starter',
         },
       ])
       .run()
@@ -403,24 +405,18 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
     await db
       .insert(schema.shopAssignments)
       .values([
-        // A社(pro)
         { id: ulid(), userId: userGrace, shopId: shopA1 },
         { id: ulid(), userId: userHenry, shopId: shopA1 },
-        // A社(basic)
-        { id: ulid(), userId: userNora, shopId: shopA_basic1 },
-        { id: ulid(), userId: userOliver, shopId: shopA_basic1 },
-        // A社(starter)
-        { id: ulid(), userId: userRachel, shopId: shopA_starter1 },
-        { id: ulid(), userId: userSam, shopId: shopA_starter1 },
-        // B社(basic)
+        { id: ulid(), userId: userNora, shopId: shopA2 },
+        { id: ulid(), userId: userOliver, shopId: shopA2 },
+        { id: ulid(), userId: userRachel, shopId: shopA1 },
+        { id: ulid(), userId: userSam, shopId: shopA1 },
         { id: ulid(), userId: userIris, shopId: shopB1 },
         { id: ulid(), userId: userJack, shopId: shopB1 },
-        // B社(pro)
-        { id: ulid(), userId: userVictor, shopId: shopB_pro1 },
-        { id: ulid(), userId: userWendy, shopId: shopB_pro1 },
-        // B社(starter)
-        { id: ulid(), userId: userZoe, shopId: shopB_starter1 },
-        { id: ulid(), userId: userAlex, shopId: shopB_starter1 },
+        { id: ulid(), userId: userVictor, shopId: shopB1 },
+        { id: ulid(), userId: userWendy, shopId: shopB1 },
+        { id: ulid(), userId: userZoe, shopId: shopB1 },
+        { id: ulid(), userId: userAlex, shopId: shopB1 },
       ])
       .run()
 
@@ -519,8 +515,8 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
         // A社(basic)
         { email: 'eve@example.com', role: 'tenant_owner', tenant: 'A社', plan: 'basic' },
         { email: 'frank@example.com', role: 'tenant_staff', tenant: 'A社', plan: 'basic' },
-        { email: 'nora@example.com', role: 'shop_owner', shop: 'A社 渋谷店', plan: 'basic' },
-        { email: 'oliver@example.com', role: 'shop_staff', shop: 'A社 渋谷店', plan: 'basic' },
+        { email: 'nora@example.com', role: 'shop_owner', shop: 'A社 新宿店', plan: 'basic' },
+        { email: 'oliver@example.com', role: 'shop_staff', shop: 'A社 新宿店', plan: 'basic' },
         // A社(starter)
         { email: 'paul@example.com', role: 'tenant_owner', tenant: 'A社', plan: 'starter' },
         { email: 'quinn@example.com', role: 'tenant_staff', tenant: 'A社', plan: 'starter' },
@@ -554,7 +550,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
       .select({
         email: schema.adminUsers.email,
         role: schema.adminUsers.role,
-        plan: schema.subscriptions.plan,
+        plan: schema.adminUsers.plan,
         tenantName: schema.tenants.name,
         shopName: schema.shops.name,
       })

@@ -99,6 +99,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_S_ID,
         role: 'tenant_owner',
+        plan: 'pro',
       },
       {
         id: TEST_USER_BOB,
@@ -106,6 +107,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_S_ID,
         role: 'tenant_staff',
+        plan: 'pro',
       },
       {
         id: TEST_USER_EVE,
@@ -113,6 +115,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_G_ID,
         role: 'tenant_owner',
+        plan: 'starter',
       },
       {
         id: TEST_USER_GRACE,
@@ -120,6 +123,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_S_ID,
         role: 'shop_owner',
+        plan: 'pro',
       },
       {
         id: TEST_USER_HENRY,
@@ -127,6 +131,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_S_ID,
         role: 'shop_staff',
+        plan: 'pro',
       },
       {
         id: TEST_USER_IRIS,
@@ -134,6 +139,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_F_ID,
         role: 'shop_owner',
+        plan: 'basic',
       },
       {
         id: TEST_USER_KATE,
@@ -141,6 +147,7 @@ export async function resetDb() {
         passwordHash: pw,
         tenantId: TEST_TENANT_G_ID,
         role: 'shop_owner',
+        plan: 'starter',
       },
     ])
     .run()

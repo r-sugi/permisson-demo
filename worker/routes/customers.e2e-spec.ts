@@ -83,6 +83,43 @@ describe('GET /api/customers - スコープ解決', () => {
     const res = await authedFetch('/api/customers', '')
     expect(res.status).toBe(401)
   })
+
+  it('tenant_owner(S社/pro): 2ページ目も取得でき、IDが重複しない', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res1 = await authedFetch('/api/customers?limit=20', token)
+    expect(res1.status).toBe(200)
+    const body1 = (await res1.json()) as CustomerListJson
+    expect(body1.items).toHaveLength(20)
+    expect(body1.nextCursor).not.toBeNull()
+
+    const res2 = await authedFetch(`/api/customers?limit=20&cursor=${body1.nextCursor}`, token)
+    expect(res2.status).toBe(200)
+    const body2 = (await res2.json()) as CustomerListJson
+    expect(body2.items).toHaveLength(20)
+
+    const ids1 = new Set(body1.items.map((i) => i.id))
+    for (const i of body2.items) {
+      expect(ids1.has(i.id)).toBe(false)
+    }
+  })
+
+  it('400: バリデーションエラー（limit=0）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers?limit=0', token)
+    expect(res.status).toBe(400)
+  })
+
+  it('400: バリデーションエラー（limit=101）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers?limit=101', token)
+    expect(res.status).toBe(400)
+  })
+
+  it('400: バリデーションエラー（cursor=""）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers?cursor=', token)
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('GET /api/customers/summary - スコープ内件数', () => {
@@ -236,6 +273,22 @@ describe('PATCH /api/customers/:id - 顧客更新', () => {
     })
     expect(res.status).toBe(404)
   })
+
+  it('400: バリデーションエラー（name が 101 文字）', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-s1-1', token, 'PATCH', {
+      name: 'a'.repeat(101),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('404: 存在しない顧客IDは 404', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedJsonFetch('/api/customers/cust-not-exist', token, 'PATCH', {
+      name: '更新試行',
+    })
+    expect(res.status).toBe(404)
+  })
 })
 
 describe('DELETE /api/customers/:id - 顧客削除', () => {
@@ -263,6 +316,12 @@ describe('DELETE /api/customers/:id - 顧客削除', () => {
     const token = await createTestJwt(TEST_USER_BOB, 'tenant_staff', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/customers/cust-s2-1', token, { method: 'DELETE' })
     expect(res.status).toBe(200)
+  })
+
+  it('404: 存在しない顧客IDは 404', async () => {
+    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const res = await authedFetch('/api/customers/cust-not-exist', token, { method: 'DELETE' })
+    expect(res.status).toBe(404)
   })
 })
 

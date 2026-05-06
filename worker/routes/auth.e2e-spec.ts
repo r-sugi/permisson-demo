@@ -81,11 +81,12 @@ describe('POST /api/auth/login', () => {
     await db
       .insert(schema.adminUsers)
       .values({
-      id: 'test-no-tenant',
-      email: 'no-tenant@test.com',
-      passwordHash: await hashPassword('password'),
-      tenantId: '',
-      role: 'tenant_owner',
+        id: 'test-no-tenant',
+        email: 'no-tenant@test.com',
+        passwordHash: await hashPassword('password'),
+        tenantId: '',
+        role: 'tenant_owner',
+        plan: 'pro',
       })
       .run()
     const res = await SELF.fetch('http://localhost/api/auth/login', {

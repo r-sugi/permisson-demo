@@ -1,5 +1,5 @@
 {
-  "version": "7",
+  "version": "8",
   "dialect": "sqlite",
   "entries": [
     {
@@ -56,6 +56,13 @@
       "version": "6",
       "when": 1778200000000,
       "tag": "0007_drop_tenant_shop_customer_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1778300000000,
+      "tag": "0008_admin_users_plan",
       "breakpoints": true
     }
   ]

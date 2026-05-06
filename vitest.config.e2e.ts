@@ -3,11 +3,10 @@ import { fileURLToPath, URL } from 'node:url'
 import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers'
 import { defineConfig } from 'vitest/config'
 
-export default defineConfig(async () => {
-  const migrationsPath = path.join(import.meta.dirname, 'worker/rdb/migrations')
-  const migrations = await readD1Migrations(migrationsPath)
+const migrationsPath = path.join(import.meta.dirname, 'worker/rdb/migrations')
+const migrations = await readD1Migrations(migrationsPath)
 
-  return {
+export default defineConfig({
     plugins: [
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
@@ -48,5 +47,5 @@ export default defineConfig(async () => {
         ],
       },
     },
-  }
+  },
 })

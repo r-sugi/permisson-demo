@@ -39,7 +39,7 @@ function labelFromEmail(email: string): string {
 }
 
 const roleColorMap: Record<string, string> = {
-  tenant_owner: 'bg-indigo-100 text-indigo-700',
+  tenant_owner: 'bg-emerald-100 text-emerald-700',
   tenant_staff: 'bg-blue-100 text-blue-700',
   shop_owner: 'bg-amber-100 text-amber-700',
   shop_staff: 'bg-gray-100 text-gray-600',
