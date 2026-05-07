@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { HTTPException } from 'hono/http-exception'
 import { authContextMiddleware } from './auth'
-import { SubscriptionRepository } from '../repository/subscription.repository'
+import { AuthContextRepository } from '../repository/auth-context.repository'
 
 type FakeContext = {
   get: (key: string) => unknown
@@ -24,26 +24,20 @@ describe('authContextMiddleware', () => {
     vi.restoreAllMocks()
   })
 
-  it('subscription が有効なら auth を注入して next を呼ぶ', async () => {
-    vi.spyOn(SubscriptionRepository.prototype, 'findValidByTenantId').mockResolvedValue({
-      id: 'sub',
-      tenantId: 't',
+  it('subscription が有効なら DB のユーザー情報で auth を注入して next を呼ぶ', async () => {
+    vi.spyOn(AuthContextRepository.prototype, 'tryAuthenticateUser').mockResolvedValue({
+      result: true,
       plan: 'pro',
-      status: 'active',
-    } as never)
-
-    const mockGet = vi.fn().mockResolvedValue({ plan: 'pro' })
-    const mockDb = {
-      select: () => ({
-        from: () => ({
-          where: () => ({ get: mockGet }),
-        }),
-      }),
-    }
+      adminUserForAuth: {
+        sub: 'u',
+        tenantId: 't',
+        role: 'tenant_owner',
+      },
+    })
 
     const c = makeCtx({
       jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
-      db: mockDb,
+      db: {},
     })
     const next = vi.fn(async () => {})
 
@@ -59,25 +53,14 @@ describe('authContextMiddleware', () => {
   })
 
   it('adminUsers が存在しなければ 404', async () => {
-    vi.spyOn(SubscriptionRepository.prototype, 'findValidByTenantId').mockResolvedValue({
-      id: 'sub',
-      tenantId: 't',
-      plan: 'pro',
-      status: 'active',
-    } as never)
-
-    const mockGet = vi.fn().mockResolvedValue(null)
-    const mockDb = {
-      select: () => ({
-        from: () => ({
-          where: () => ({ get: mockGet }),
-        }),
-      }),
-    }
+    vi.spyOn(AuthContextRepository.prototype, 'tryAuthenticateUser').mockResolvedValue({
+      result: false,
+      error: 'user_not_found',
+    })
 
     const c = makeCtx({
       jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
-      db: mockDb,
+      db: {},
     })
     const next = vi.fn(async () => {})
 
@@ -91,9 +74,10 @@ describe('authContextMiddleware', () => {
   })
 
   it('subscription が無効なら 401', async () => {
-    vi.spyOn(SubscriptionRepository.prototype, 'findValidByTenantId').mockResolvedValue(
-      null as never,
-    )
+    vi.spyOn(AuthContextRepository.prototype, 'tryAuthenticateUser').mockResolvedValue({
+      result: false,
+      error: 'subscription_inactive',
+    })
 
     const c = makeCtx({
       jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },

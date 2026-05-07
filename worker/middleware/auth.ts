@@ -1,10 +1,8 @@
+import type { AuthContext, Role } from '@shared/permission/types'
 import type { Context, Next } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { eq } from 'drizzle-orm'
 import type { HonoEnv } from '../type'
-import type { AuthContext, Role, Plan } from '@shared/permission/types'
-import { SubscriptionRepository } from '../repository/subscription.repository'
-import { schema } from '../rdb/index'
+import { AuthContextRepository } from '../repository/auth-context.repository'
 
 type JwtPayload = {
   sub: string
@@ -17,29 +15,24 @@ type JwtPayload = {
 export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
   const payload = c.get('jwtPayload') as JwtPayload
 
-  // 現状は課金・解約の即時反映のため毎回 DB を参照する。
-  // 将来的にキャッシュする場合はキーを tenantId とし、subscriptions.updatedAt（要スキーマ追加）などで世代判定するか、Webhook で無効化する想定。
   const db = c.get('db')
-  const subscriptionRepo = new SubscriptionRepository(db)
-  const subscription = await subscriptionRepo.findValidByTenantId(payload.tenantId)
-  if (!subscription) {
+  const repo = new AuthContextRepository(db)
+  const response = await repo.tryAuthenticateUser(payload.sub, payload.tenantId)
+
+  if (!response.result) {
+    if (response.error === 'user_not_found') {
+      throw new HTTPException(404, { message: 'User not found' })
+    }
     throw new HTTPException(401, { message: 'Subscription is not active' })
   }
 
-  const userRow = await db
-    .select({ plan: schema.adminUsers.plan })
-    .from(schema.adminUsers)
-    .where(eq(schema.adminUsers.id, payload.sub))
-    .get()
-  if (!userRow) {
-    throw new HTTPException(404, { message: 'User not found' })
-  }
+  const { adminUserForAuth: u, plan } = response
 
   c.set('auth', {
-    userId: payload.sub,
-    tenantId: payload.tenantId,
-    role: payload.role as Role,
-    plan: userRow.plan as Plan,
+    userId: u.sub,
+    tenantId: u.tenantId,
+    role: u.role,
+    plan,
   } satisfies AuthContext)
 
   await next()
