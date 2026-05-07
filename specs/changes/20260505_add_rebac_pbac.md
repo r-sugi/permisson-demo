@@ -241,6 +241,8 @@ class SubscriptionRepository {
 ```typescript
 // worker/middleware/auth.ts
 
+import { SubscriptionInactiveError } from '@shared/error/my-app-error'
+
 export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
   const payload = c.get('jwtPayload') as JwtPayload
 
@@ -249,7 +251,7 @@ export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
   const subscriptionRepo = new SubscriptionRepository(c.get('db'))
   const subscription = await subscriptionRepo.findValidByTenantId(payload.tenantId)
   if (!subscription) {
-    throw new HTTPException(401, { message: 'Subscription is not active' })
+    throw new SubscriptionInactiveError()
   }
 
   c.set('auth', {
@@ -270,10 +272,10 @@ export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
 ```typescript
 import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
-import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
 import type { AuthContext, PolicyContext } from '@shared/permission/types'
 import type { GateRelationResolver } from '@shared/permission/scope/resolver-types'
+import { PermissionDeniedError, ResourceNotFoundError } from '@shared/error/my-app-error'
 import {
   POLICY_MAP,
   type PolicyOption,
@@ -300,9 +302,7 @@ export function authorize(options: AuthorizeOptions) {
       const permissions = policy.listPermissions() as Record<string, unknown>
 
       if (!permissions[action]) {
-        throw new HTTPException(403, {
-          message: buildPermissionDeniedMessage(target, action),
-        })
+        throw new PermissionDeniedError(buildPermissionDeniedMessage(target, action))
       }
     }
 
@@ -311,7 +311,7 @@ export function authorize(options: AuthorizeOptions) {
       const relationResolver = options.relation.resolver(c)
       const allowed = await relationResolver(c.get('repo'), auth)
       if (!allowed) {
-        throw new HTTPException(404, { message: 'Not Found' })
+        throw new ResourceNotFoundError('Resource not found')
       }
     }
 
@@ -611,6 +611,8 @@ DB アクセスのない interface / 抽象基底クラスのみ `shared/` に�
 ```typescript
 // shared/permission/scope/customer/scope.ts
 
+import { ForbiddenError } from '@shared/error/my-app-error'
+
 export interface CustomerScope {
   resolveIds(): Promise<string[]>
   validateIds(customerIds: string[]): Promise<string[]>
@@ -624,9 +626,7 @@ export abstract class BaseCustomerScope implements CustomerScope {
     const accessibleSet = new Set(accessibleIds)
     const invalidIds = customerIds.filter(id => !accessibleSet.has(id))
     if (invalidIds.length > 0) {
-      throw new HTTPException(403, {
-        message: 'アクセス権のないカスタマーIDが含まれています',
-      })
+      throw new ForbiddenError('アクセス権のないカスタマーIDが含まれています')
     }
     return customerIds
   }

@@ -29,7 +29,6 @@ export type AuthContext = {
 export type PolicyContext = {
   role: Role
   plan: Plan
-  shop_ids: string[]
 }
 
 // ================================

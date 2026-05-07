@@ -1,15 +1,15 @@
 import { zValidator } from '@hono/zod-validator'
-import { buildPermissionsMap } from '@shared/permission/permissions'
+import { buildPermissionsMap, policyContextFromAuth } from '@shared/permission/permissions'
 import { isTenantAssignmentRole } from '@shared/permission/scope/types'
 import type { Role } from '@shared/permission/types'
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { sign } from 'hono/jwt'
 import { ulid } from 'ulidx'
 import { z } from 'zod'
 import { schema } from '../rdb/index'
 import type { HonoEnv } from '../type'
+import { ResourceNotFoundError, UnauthorizedError } from '@shared/error/my-app-error'
 
 export type DemoUser = {
   email: string
@@ -92,14 +92,12 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
         .get()
 
       if (!user || !(await verifyPassword(password, user.passwordHash))) {
-        throw new HTTPException(401, {
-          message: 'メールアドレスまたはパスワードが正しくありません',
-        })
+        throw new UnauthorizedError('メールアドレスまたはパスワードが正しくありません')
       }
 
       const meta = await resolveUserMeta(db, user.id)
       if (!meta) {
-        throw new HTTPException(401, { message: 'ユーザーにアサインメントがありません' })
+        throw new UnauthorizedError('ユーザーにアサインメントがありません')
       }
 
       const payload: JwtPayload = { sub: user.id, role: meta.role, tenantId: meta.tenantId }
@@ -586,7 +584,7 @@ export const protectedAuthRoutes = new Hono<HonoEnv>()
       .where(eq(schema.adminUsers.id, auth.userId))
       .get()
 
-    if (!user) throw new HTTPException(404, { message: 'User not found' })
+    if (!user) throw new ResourceNotFoundError('User not found')
 
     const isTenantLevel = isTenantAssignmentRole(auth.role)
     let shopScope: string
@@ -606,11 +604,7 @@ export const protectedAuthRoutes = new Hono<HonoEnv>()
           .join(', ') || '-'
     }
 
-    const permissions = buildPermissionsMap({
-      role: auth.role,
-      plan: auth.plan,
-      shop_ids: [],
-    })
+    const permissions = buildPermissionsMap(policyContextFromAuth(auth))
 
     return c.json({ ...user, role: auth.role, plan: auth.plan, shopScope, permissions })
   })

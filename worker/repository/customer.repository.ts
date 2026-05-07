@@ -1,11 +1,11 @@
 import type { CustomerScope } from '@shared/permission/scope/customer/scope'
 import { eq, getTableColumns, inArray, sql } from 'drizzle-orm'
-import { HTTPException } from 'hono/http-exception'
 import { schema } from '../rdb/index'
 import type { CustomerRow } from '../rdb/models/customers'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { createCustomerScope } from './customer-scope'
 import { UserRelationRepository } from './user-relation.repository'
+import { ResourceNotFoundError } from '@shared/error/my-app-error'
 
 const EXPORT_PAGE_SIZE = 500
 
@@ -123,7 +123,7 @@ export class CustomerRepository {
     const scope = await this.resolveScope()
     const ok = await scope.isCustomerInScope(customerId)
     if (!ok) {
-      throw new HTTPException(404, { message: 'Not Found' })
+      throw new ResourceNotFoundError('Not Found')
     }
     return getCustomerWithDisplayById(this.db, customerId)
   }

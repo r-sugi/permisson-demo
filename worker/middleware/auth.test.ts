@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { HTTPException } from 'hono/http-exception'
 import { authContextMiddleware } from './auth'
 import { AuthContextRepository } from '../repository/auth-context.repository'
+import { NotFoundError, SubscriptionInactiveError } from '@shared/error/my-app-error'
 
 type FakeContext = {
   get: (key: string) => unknown
@@ -36,7 +36,7 @@ describe('authContextMiddleware', () => {
     })
 
     const c = makeCtx({
-      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      jwt: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
       db: {},
     })
     const next = vi.fn(async () => {})
@@ -59,13 +59,13 @@ describe('authContextMiddleware', () => {
     })
 
     const c = makeCtx({
-      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      jwt: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
       db: {},
     })
     const next = vi.fn(async () => {})
 
     await expect(authContextMiddleware(c as never, next as never)).rejects.toBeInstanceOf(
-      HTTPException,
+      NotFoundError,
     )
     await expect(authContextMiddleware(c as never, next as never)).rejects.toMatchObject({
       status: 404,
@@ -73,23 +73,23 @@ describe('authContextMiddleware', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  it('subscription が無効なら 401', async () => {
+  it('subscription が無効なら 403', async () => {
     vi.spyOn(AuthContextRepository.prototype, 'tryAuthenticateUser').mockResolvedValue({
       result: false,
       error: 'subscription_inactive',
     })
 
     const c = makeCtx({
-      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      jwt: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
       db: {},
     })
     const next = vi.fn(async () => {})
 
     await expect(authContextMiddleware(c as never, next as never)).rejects.toBeInstanceOf(
-      HTTPException,
+      SubscriptionInactiveError,
     )
     await expect(authContextMiddleware(c as never, next as never)).rejects.toMatchObject({
-      status: 401,
+      status: 403,
     })
     expect(next).not.toHaveBeenCalled()
   })

@@ -1,10 +1,11 @@
 import type { AuthContext } from '@shared/permission/types'
-import { HTTPException } from 'hono/http-exception'
 import { ulid } from 'ulidx'
 import type { CustomerRepository } from '../repository/customer.repository'
 import type { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
 import type { ShopRepository } from '../repository/shop.repository'
 import type { DrizzleDb } from '../services/database.service'
+import { MyAppError } from '@shared/error'
+import { ResourceNotFoundError } from '@shared/error/my-app-error'
 
 export class CustomerUseCase {
   constructor(
@@ -48,7 +49,7 @@ export class CustomerUseCase {
   }) {
     const shop = await this.shopRepo.findById(data.shopId)
     if (!shop || shop.tenantId !== this.auth.tenantId) {
-      throw new HTTPException(404, { message: 'Not Found' })
+      throw new ResourceNotFoundError('Not Found')
     }
 
     const customerId = ulid()
@@ -70,7 +71,7 @@ export class CustomerUseCase {
 
     const customer = await this.customerRepo.findRowById(customerId)
     if (!customer) {
-      throw new HTTPException(500, { message: 'Customer creation failed' })
+      throw new MyAppError(500, 'Customer creation failed')
     }
     return customer
   }

@@ -1,7 +1,7 @@
 import type { Context, Input } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import type { HonoEnv } from '../type'
-import type { AuthContext, PolicyContext } from '@shared/permission/types'
+import type { AuthContext } from '@shared/permission/types'
 import type { GateRelationResolver } from '@shared/permission/scope/resolver-types'
 import {
   POLICY_MAP,
@@ -13,6 +13,7 @@ import {
   PermissionDeniedError,
   ResourceNotFoundError,
 } from '@shared/error/my-app-error'
+import { policyContextFromAuth } from '@shared/permission/permissions'
 
 // biome-ignore lint/complexity/noBannedTypes: Hono の既定 Input（空オブジェクト）はフレームワーク慣例
 type RelationAuthorizeOption<I extends Input = {}> =
@@ -65,8 +66,7 @@ export function authorize<I extends Input = {}>(options: AuthorizeOptions<I>) {
     // Gate 1: PBAC（role + plan でインメモリ評価・DBアクセスなし）
     if (options.policy) {
       const { target, action } = options.policy
-      // shop_ids: Gate1 の Policy でショップ単位の属性を参照する場合に注入する予定。現状のポリシーは role+plan のみのため空配列。
-      const context: PolicyContext = { role: auth.role, plan: auth.plan, shop_ids: [] }
+      const context = policyContextFromAuth(auth)
       const policy = POLICY_MAP[target][auth.role](context)
       const permissions = policy.listPermissions() as Record<string, unknown>
 

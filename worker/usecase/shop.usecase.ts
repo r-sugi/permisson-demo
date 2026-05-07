@@ -1,11 +1,11 @@
-import { POLICY_MAP } from '@shared/permission/policy/context'
+import { buildPermissionsMap, policyContextFromAuth } from '@shared/permission/permissions'
 import type { AuthContext } from '@shared/permission/types'
 import { SHOP_LIMIT_UNLIMITED } from '@shared/permission/types'
-import { HTTPException } from 'hono/http-exception'
 import { ulid } from 'ulidx'
 import type { PurchaseHistoryRepository } from '../repository/purchase-history.repository'
 import type { ShopRepository } from '../repository/shop.repository'
 import type { ShopAccessRepository } from '../repository/shop-access.repository'
+import { ResourceNotFoundError, ShopCreationLimitExceededError } from '@shared/error/my-app-error'
 
 export class ShopUseCase {
   constructor(
@@ -24,18 +24,14 @@ export class ShopUseCase {
   }
 
   async createShop(tenantId: string, name: string) {
-    const { createShopLimit } = POLICY_MAP.settings[this.auth.role]({
-      role: this.auth.role,
-      plan: this.auth.plan,
-      shop_ids: [],
-    }).listPermissions()
+    const { createShopLimit } = buildPermissionsMap(policyContextFromAuth(this.auth)).settings
 
     const currentCount = await this.shopRepo.countActiveByTenantId(tenantId)
 
     if (currentCount >= createShopLimit) {
-      throw new HTTPException(422, {
-        message: `店舗作成上限（${createShopLimit === SHOP_LIMIT_UNLIMITED ? '無制限' : `${createShopLimit}件`}）に達しています（現在: ${currentCount}件）`,
-      })
+      throw new ShopCreationLimitExceededError(
+        `店舗作成上限（${createShopLimit === SHOP_LIMIT_UNLIMITED ? '無制限' : `${createShopLimit}件`}）に達しています（現在: ${currentCount}件）`,
+      )
     }
 
     const id = ulid()
@@ -45,7 +41,7 @@ export class ShopUseCase {
   async deleteShop(shopId: string) {
     const shop = await this.shopRepo.findById(shopId)
     if (!shop || shop.tenantId !== this.auth.tenantId) {
-      throw new HTTPException(404, { message: 'Not Found' })
+      throw new ResourceNotFoundError('Not Found')
     }
     await this.shopRepo.deleteById(shopId)
     return { shopId }

@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { POLICY_MAP } from './context'
 import type { PolicyContext } from '@shared/permission/types'
+import { describe, expect, it } from 'vitest'
+import { POLICY_MAP } from './context'
 
 function makeCtx(role: string, plan: string): PolicyContext {
-  return { role: role as PolicyContext['role'], plan: plan as PolicyContext['plan'], shop_ids: [] }
+  return { role: role as PolicyContext['role'], plan: plan as PolicyContext['plan'] }
 }
 
 describe('POLICY_MAP - customer', () => {

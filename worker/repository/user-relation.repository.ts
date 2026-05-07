@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm'
-import { HTTPException } from 'hono/http-exception'
 import type { Role } from '@shared/permission/types'
 import { isTenantAssignmentRole } from '@shared/permission/scope/types'
 import type { DrizzleDb } from '../services/database.service'
 import { schema } from '../rdb/index'
+import { ResourceNotFoundError, ForbiddenError } from '@shared/error/my-app-error'
 
 /** テナント紐付け or 店舗割当（複数行可）に基づくスコープ解決 */
 export type UserScopeResolution =
@@ -21,7 +21,7 @@ export class UserRelationRepository {
       .where(eq(schema.adminUsers.id, userId))
       .get()
 
-    if (!user) throw new HTTPException(403, { message: 'User not found' })
+    if (!user) throw new ResourceNotFoundError('User not found')
 
     const role = user.role as Role
     if (isTenantAssignmentRole(role)) {
@@ -36,7 +36,7 @@ export class UserRelationRepository {
       .get()
 
     if (!hasAssignment) {
-      throw new HTTPException(403, { message: 'User has no assignment' })
+      throw new ForbiddenError('User has no assignment')
     }
 
     return { kind: 'shops', userId }
