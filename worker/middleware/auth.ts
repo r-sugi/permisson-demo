@@ -1,8 +1,8 @@
 import type { AuthContext, Role } from '@shared/permission/types'
 import type { Context, Next } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import type { HonoEnv } from '../type'
 import { AuthContextRepository } from '../repository/auth-context.repository'
+import { NotFoundError, SubscriptionInactiveError } from '@shared/error/my-app-error'
 
 type JwtPayload = {
   sub: string
@@ -21,9 +21,9 @@ export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
 
   if (!response.result) {
     if (response.error === 'user_not_found') {
-      throw new HTTPException(404, { message: 'User not found' })
+      throw new NotFoundError('User not found')
     }
-    throw new HTTPException(401, { message: 'Subscription is not active' })
+    throw new SubscriptionInactiveError()
   }
 
   const { adminUserForAuth: u, plan } = response
