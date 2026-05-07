@@ -16,12 +16,15 @@ import type { HonoEnv } from './type'
 
 export const app = new Hono<HonoEnv>()
   .onError((err, c) => {
+    // カスタムエラー
     if (isMyAppError(err)) {
       return c.json({ message: err.message }, err.status as ContentfulStatusCode)
     }
+    // Hono のデフォルトエラー
     if (err instanceof HTTPException) {
       return c.json({ message: err.message }, err.status as ContentfulStatusCode)
     }
+    // 予期せぬエラー
     console.error(err)
     return c.json({ message: 'Internal Server Error' }, 500)
   })

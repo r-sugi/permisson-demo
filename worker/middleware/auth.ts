@@ -1,4 +1,4 @@
-import type { AuthContext, Role } from '@shared/permission/types'
+import type { AuthContext } from '@shared/permission/types'
 import type { Context, Next } from 'hono'
 import type { HonoEnv } from '../type'
 import { AuthContextRepository } from '../repository/auth-context.repository'

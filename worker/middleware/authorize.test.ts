@@ -1,5 +1,7 @@
+import { isMyAppError } from '@shared/error'
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { HonoEnv } from '../type'
 import type { AuthContext } from '@shared/permission/types'
 import type { Repositories } from '@shared/permission/scope/resolver-types'
@@ -22,6 +24,13 @@ const mockRepos: Repositories = {
 
 function testApp(auth: AuthContext, routes: (app: Hono<HonoEnv>) => void) {
   const app = new Hono<HonoEnv>()
+  app.onError((err, c) => {
+    if (isMyAppError(err)) {
+      return c.json({ message: err.message }, err.status as ContentfulStatusCode)
+    }
+    console.error(err)
+    return c.json({ message: 'Internal Server Error' }, 500)
+  })
   app.use('*', async (c, next) => {
     c.set('auth', auth)
     c.set('repo', mockRepos)
@@ -53,7 +62,9 @@ describe('authorize middleware', () => {
       )
       const res = await app.request('/empty-authz')
       expect(res.status).toBe(403)
-      expect(await res.text()).toContain('requires policy and/or relation')
+      expect(((await res.json()) as { message: string }).message).toContain(
+        'requires policy and/or relation',
+      )
     })
   })
 
@@ -89,7 +100,9 @@ describe('authorize middleware', () => {
       )
       const res = await app.request('/deny')
       expect(res.status).toBe(403)
-      expect(await res.text()).toContain('Permission denied: customer.read')
+      expect(((await res.json()) as { message: string }).message).toContain(
+        'Permission denied: customer.read',
+      )
     })
 
     it('ポリシーに存在しない action キーは 403', async () => {
@@ -113,7 +126,9 @@ describe('authorize middleware', () => {
       )
       const res = await app.request('/bad-action')
       expect(res.status).toBe(403)
-      expect(await res.text()).toContain('Permission denied: customer.nonexistentAction')
+      expect(((await res.json()) as { message: string }).message).toContain(
+        'Permission denied: customer.nonexistentAction',
+      )
     })
   })
 
@@ -160,7 +175,81 @@ describe('authorize middleware', () => {
       )
       const res = await app.request('/rel-deny')
       expect(res.status).toBe(404)
-      expect(await res.text()).toContain('Not Found')
+      expect(((await res.json()) as { message: string }).message).toBe('Resource not found')
+    })
+
+    it('resolvers がすべて true なら 200', async () => {
+      const auth: AuthContext = {
+        userId: 'u',
+        tenantId: 't',
+        role: 'tenant_owner',
+        plan: 'pro',
+      }
+      const app = testApp(auth, (a) =>
+        a.get(
+          '/rel-multi-ok',
+          authorize({
+            relation: {
+              resolvers: (): GateRelationResolver[] => [
+                async () => true,
+                async () => true,
+              ],
+            },
+          }),
+          (c) => c.json({ ok: true }),
+        ),
+      )
+      const res = await app.request('/rel-multi-ok')
+      expect(res.status).toBe(200)
+    })
+
+    it('resolvers のいずれかが false なら 404', async () => {
+      const auth: AuthContext = {
+        userId: 'u',
+        tenantId: 't',
+        role: 'tenant_owner',
+        plan: 'pro',
+      }
+      const app = testApp(auth, (a) =>
+        a.get(
+          '/rel-multi-deny',
+          authorize({
+            relation: {
+              resolvers: (): GateRelationResolver[] => [
+                async () => true,
+                async () => false,
+              ],
+            },
+          }),
+          (c) => c.json({ ok: true }),
+        ),
+      )
+      const res = await app.request('/rel-multi-deny')
+      expect(res.status).toBe(404)
+      expect(((await res.json()) as { message: string }).message).toBe('Resource not found')
+    })
+
+    it('resolvers が空配列なら 403（誤設定拒否）', async () => {
+      const auth: AuthContext = {
+        userId: 'u',
+        tenantId: 't',
+        role: 'tenant_owner',
+        plan: 'pro',
+      }
+      const app = testApp(auth, (a) =>
+        a.get(
+          '/rel-multi-empty',
+          authorize({
+            relation: {
+              resolvers: (): GateRelationResolver[] => [],
+            },
+          }),
+          (c) => c.json({ ok: true }),
+        ),
+      )
+      const res = await app.request('/rel-multi-empty')
+      expect(res.status).toBe(403)
+      expect(((await res.json()) as { message: string }).message).toContain('non-empty array')
     })
   })
 
@@ -190,6 +279,31 @@ describe('authorize middleware', () => {
       expect(relationSpy).not.toHaveBeenCalled()
     })
 
+    it('PBAC 失敗時は relation.resolvers も呼ばれない', async () => {
+      const relationSpy = vi.fn(async (): Promise<boolean> => true)
+      const auth: AuthContext = {
+        userId: 'u',
+        tenantId: 't',
+        role: 'shop_staff',
+        plan: 'pro',
+      }
+      const app = testApp(auth, (a) =>
+        a.get(
+          '/both-multi',
+          authorize({
+            policy: { target: 'customer', action: 'read' },
+            relation: {
+              resolvers: () => [relationSpy, relationSpy],
+            },
+          }),
+          (c) => c.json({ ok: true }),
+        ),
+      )
+      const res = await app.request('/both-multi')
+      expect(res.status).toBe(403)
+      expect(relationSpy).not.toHaveBeenCalled()
+    })
+
     it('PBAC 成功・ReBAC 失敗なら 404', async () => {
       const auth: AuthContext = {
         userId: 'u',
@@ -211,6 +325,7 @@ describe('authorize middleware', () => {
       )
       const res = await app.request('/rebac-fail')
       expect(res.status).toBe(404)
+      expect(((await res.json()) as { message: string }).message).toBe('Resource not found')
     })
 
     it('両方成功なら 200', async () => {
