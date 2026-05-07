@@ -4,16 +4,8 @@ import type { HonoEnv } from '../type'
 import { AuthContextRepository } from '../repository/auth-context.repository'
 import { NotFoundError, SubscriptionInactiveError } from '@shared/error/my-app-error'
 
-type JwtPayload = {
-  sub: string
-  role: Role
-  tenantId: string
-  iat?: number
-  exp?: number
-}
-
 export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
-  const payload = c.get('jwtPayload') as JwtPayload
+  const payload = c.get('jwt')
 
   const db = c.get('db')
   const repo = new AuthContextRepository(db)
