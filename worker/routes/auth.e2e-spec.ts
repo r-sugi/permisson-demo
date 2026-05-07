@@ -127,11 +127,11 @@ describe('GET /api/auth/me', () => {
     expect(res.status).toBe(401)
   })
 
-  it('401: subscription が inactive なら認証エラー', async () => {
+  it('403: subscription が inactive なら認証エラー', async () => {
     await setSubscriptionStatus(TEST_TENANT_S_ID, 'inactive')
     const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/auth/me', token)
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(403)
     const body = (await res.json()) as { message?: string }
     expect(body.message).toBe('Subscription is not active')
   })

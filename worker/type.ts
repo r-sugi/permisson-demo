@@ -18,7 +18,7 @@ export type UseCases = {
 }
 
 export type Variables = {
-  jwt: Jwt
+  jwtPayload: Jwt
   auth: AuthContext
   db: DrizzleDb
   repo: Repositories

@@ -36,7 +36,7 @@ describe('authContextMiddleware', () => {
     })
 
     const c = makeCtx({
-      jwt: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
       db: {},
     })
     const next = vi.fn(async () => {})
@@ -59,7 +59,7 @@ describe('authContextMiddleware', () => {
     })
 
     const c = makeCtx({
-      jwt: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
       db: {},
     })
     const next = vi.fn(async () => {})
@@ -80,7 +80,7 @@ describe('authContextMiddleware', () => {
     })
 
     const c = makeCtx({
-      jwt: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
+      jwtPayload: { sub: 'u', role: 'tenant_owner', tenantId: 't' },
       db: {},
     })
     const next = vi.fn(async () => {})

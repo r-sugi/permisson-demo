@@ -5,7 +5,7 @@ import { AuthContextRepository } from '../repository/auth-context.repository'
 import { NotFoundError, SubscriptionInactiveError } from '@shared/error/my-app-error'
 
 export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
-  const payload = c.get('jwt')
+  const payload = c.get('jwtPayload')
 
   const db = c.get('db')
   const repo = new AuthContextRepository(db)

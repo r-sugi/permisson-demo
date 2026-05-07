@@ -6,6 +6,7 @@ import {
   resetDb,
   TEST_SHOP_G1_ID,
   TEST_SHOP_S1_ID,
+  TEST_TENANT_F_ID,
   TEST_TENANT_G_ID,
   TEST_TENANT_S_ID,
   TEST_USER_ALICE,
@@ -350,7 +351,7 @@ describe('GET /api/customers/export - CSVエクスポート', () => {
   })
 
   it('shop_owner(F社/basic): 200 でエクスポート成功（月100件）', async () => {
-    const token = await createTestJwt(TEST_USER_IRIS, 'shop_owner', TEST_TENANT_S_ID)
+    const token = await createTestJwt(TEST_USER_IRIS, 'shop_owner', TEST_TENANT_F_ID)
     const res = await authedFetch('/api/customers/export', token)
     expect(res.status).toBe(200)
   })
