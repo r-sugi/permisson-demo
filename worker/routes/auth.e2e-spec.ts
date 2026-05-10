@@ -104,7 +104,7 @@ describe('GET /api/auth/me', () => {
   beforeEach(() => resetDb())
 
   it('200: JWTがあれば自身の情報と権限マップを返す', async () => {
-    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const token = await createTestJwt(TEST_USER_ALICE, TEST_TENANT_S_ID)
     const res = await authedFetch('/api/auth/me', token)
     expect(res.status).toBe(200)
     const body = (await res.json()) as {
@@ -129,7 +129,7 @@ describe('GET /api/auth/me', () => {
 
   it('403: subscription が inactive なら認証エラー', async () => {
     await setSubscriptionStatus(TEST_TENANT_S_ID, 'inactive')
-    const token = await createTestJwt(TEST_USER_ALICE, 'tenant_owner', TEST_TENANT_S_ID)
+    const token = await createTestJwt(TEST_USER_ALICE, TEST_TENANT_S_ID)
     const res = await authedFetch('/api/auth/me', token)
     expect(res.status).toBe(403)
     const body = (await res.json()) as { message?: string }
@@ -137,7 +137,7 @@ describe('GET /api/auth/me', () => {
   })
 
   it('404: JWTの sub が存在しないユーザーなら 404', async () => {
-    const token = await createTestJwt('test-nobody', 'tenant_owner', TEST_TENANT_S_ID)
+    const token = await createTestJwt('test-nobody', TEST_TENANT_S_ID)
     const res = await authedFetch('/api/auth/me', token)
     expect(res.status).toBe(404)
   })

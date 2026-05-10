@@ -50,7 +50,6 @@ function seedCustomerTargetFromEnv(countBinding: string | undefined): number {
 // ─────────────────────────────────────────────
 type JwtPayload = {
   sub: string
-  role: Role
   tenantId: string
 }
 
@@ -100,7 +99,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
         throw new UnauthorizedError('ユーザーにアサインメントがありません')
       }
 
-      const payload: JwtPayload = { sub: user.id, role: meta.role, tenantId: meta.tenantId }
+      const payload: JwtPayload = { sub: user.id, tenantId: meta.tenantId }
       const token = await sign(payload, c.env.JWT_SECRET, 'HS256')
 
       return c.json({ token, role: meta.role, tenantId: meta.tenantId })

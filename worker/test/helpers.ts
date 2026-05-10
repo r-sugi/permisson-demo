@@ -4,8 +4,6 @@ import { eq } from 'drizzle-orm'
 import { sign } from 'hono/jwt'
 import { ulid } from 'ulidx'
 import { schema } from '../rdb/index'
-import type { Role } from '@shared/permission/types'
-
 // ─────────────────────────────────────────────
 // 定数
 // ─────────────────────────────────────────────
@@ -276,8 +274,8 @@ export async function setSubscriptionStatus(
 // ─────────────────────────────────────────────
 // JWT ヘルパー
 // ─────────────────────────────────────────────
-export async function createTestJwt(userId: string, role: Role, tenantId: string): Promise<string> {
-  return sign({ sub: userId, role, tenantId }, TEST_JWT_SECRET, 'HS256')
+export async function createTestJwt(userId: string, tenantId: string): Promise<string> {
+  return sign({ sub: userId, tenantId }, TEST_JWT_SECRET, 'HS256')
 }
 
 // ─────────────────────────────────────────────
