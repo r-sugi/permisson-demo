@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "authz-sandbox",
+  "account_id": "9a93e379d73896df4f9234ac783ad6cb",
   "main": "worker/index.ts",
   "compatibility_date": "2026-04-02",
   "compatibility_flags": ["nodejs_compat"],
@@ -18,7 +19,7 @@
     {
       "binding": "DB",
       "database_name": "authz-sandbox",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "35bcad1f-c026-447a-93ce-964fd5ba4742",
       "migrations_dir": "worker/rdb/migrations"
     }
   ],

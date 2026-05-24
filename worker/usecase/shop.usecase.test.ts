@@ -62,11 +62,13 @@ describe('ShopUseCase', () => {
 
       const out = await usecase.createShop('t', '新店舗')
       expect(insertShop).toHaveBeenCalledTimes(1)
-      expect(insertShop.mock.calls[0][0]).toMatchObject({
-        tenantId: 't',
-        name: '新店舗',
-      })
-      expect(insertShop.mock.calls[0][0].id).toMatch(/^[0-9A-Z]{26}$/)
+      expect(insertShop).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 't',
+          name: '新店舗',
+          id: expect.stringMatching(/^[0-9A-Z]{26}$/),
+        }),
+      )
       expect(out).toEqual({ id: 'new-shop', tenantId: 't', name: '新店舗' })
     })
 
