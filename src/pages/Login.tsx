@@ -116,7 +116,7 @@ export function LoginPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-1">ユーザーを選択してログイン</h2>
             <p className="text-xs text-gray-500 mb-3">
-              クリックで即座にログインします（パスワード: password）
+              クリックで即座にログインできます。
             </p>
             {usersLoading && (
               <p className="text-sm text-gray-400 py-4 text-center">ユーザー一覧を読み込み中...</p>
