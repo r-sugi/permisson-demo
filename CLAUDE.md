@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Cloudflare Workers (Hono) + React (Vite) の一体型権限制御 PoC。バックエンドは Hono + Drizzle ORM + D1、フロントは React + Tailwind CSS v4、デプロイ先は Cloudflare Workers。
+Cloudflare Workers (Hono) + React (Vite) の一体型権限制御 PoC（[authz-sandbox](https://github.com/r-sugi/authz-sandbox)）。バックエンドは Hono + Drizzle ORM + D1、フロントは React + Tailwind CSS v4、デプロイ先は Cloudflare Workers。
 
 ## Commands
 

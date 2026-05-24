@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "poc-permission",
+  "name": "authz-sandbox",
   "main": "worker/index.ts",
   "compatibility_date": "2026-04-02",
   "compatibility_flags": ["nodejs_compat"],
@@ -13,11 +13,11 @@
   "upload_source_maps": true,
 
   // D1 Database
-  // Run `wrangler d1 create poc-permission` to get a real database_id for production
+  // Run `wrangler d1 create authz-sandbox` to get a real database_id for production
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "poc-permission",
+      "database_name": "authz-sandbox",
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "worker/rdb/migrations"
     }

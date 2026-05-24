@@ -1,5 +1,5 @@
 {
-  "name": "poc-permission",
+  "name": "authz-sandbox",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,7 +20,7 @@
     "test:unit:cov": "vitest run --config vitest.config.unit.ts --coverage",
     "test:e2e:cov": "vitest run --config vitest.config.e2e.ts --coverage",
     "db:gen": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply poc-permission --local",
+    "db:migrate:local": "wrangler d1 migrations apply authz-sandbox --local",
     "db:reset:local": "vite-node -c vite.seed-cli.config.ts worker/cli/run-local-reset.ts",
     "db:seed:local": "vite-node -c vite.seed-cli.config.ts worker/cli/run-local-seed.ts",
     "db:reset:seed": "npm run db:migrate:local && npm run db:reset:local && npm run db:seed:local",
