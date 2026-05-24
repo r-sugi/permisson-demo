@@ -61,14 +61,13 @@ export const app = new Hono<HonoEnv>()
   .route('/api/shops', shopListRoutes)
   .route('/api/tenants', tenantShopRoutes)
 
-  // /login のみ Basic 認証（SPA は index を返す）
+  // /login のみ Basic 認証（SPA エントリ）
   .use('/login', basicAuthMiddleware())
   .get('/login', async (c) => {
     const indexRequest = new Request(new URL('/', c.req.url), c.req.raw)
     try {
       return await c.env.ASSETS.fetch(indexRequest)
     } catch {
-      // dev: ASSETS が未構築の場合は Vite へフォールバック
       return fetch(indexRequest)
     }
   })

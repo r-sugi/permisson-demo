@@ -32,13 +32,14 @@ function makeApp() {
 }
 
 describe('basicAuthMiddleware', () => {
-  it('/login は正しい Basic 認証で通過する', async () => {
+  it('/login は正しい Basic 認証で SPA を返す', async () => {
     const res = await makeApp().request('/login', {
       headers: { Authorization: basicHeader('user', '12345') },
     }, TEST_ENV)
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('<html>login</html>')
   })
+
   it('/login は認証なしだと 401', async () => {
     const res = await makeApp().request('/login', {}, TEST_ENV)
     expect(res.status).toBe(401)

@@ -67,12 +67,16 @@ const PLAN_FEATURE_COLUMNS = ['CSV出力', '店舗作成上限'] as const
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { refetchMe } = usePermissionContext()
+  const { me, loading, refetchMe } = usePermissionContext()
   const [error, setError] = useState('')
   const [loadingEmail, setLoadingEmail] = useState<string | null>(null)
   const [grouped, setGrouped] = useState<Record<string, DemoUser[]>>({})
   const [usersLoading, setUsersLoading] = useState(true)
   const [usersError, setUsersError] = useState('')
+
+  useEffect(() => {
+    if (!loading && me) navigate('/', { replace: true })
+  }, [loading, me, navigate])
 
   useEffect(() => {
     apiClient.api.auth['demo-users']
