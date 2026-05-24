@@ -7,7 +7,7 @@
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/login"]
   },
   "observability": { "enabled": true },
   "upload_source_maps": true,
@@ -23,9 +23,9 @@
     }
   ],
 
-  // JWT_SECRET is injected via .dev.vars for local development
+  // JWT_SECRET / BASIC_AUTH_* は .dev.vars（ローカル）または wrangler secret put（本番）で注入
   "secrets": {
-    "required": ["JWT_SECRET"]
+    "required": ["JWT_SECRET", "BASIC_AUTH_USERNAME", "BASIC_AUTH_PASSWORD"]
   },
 
   // E2E は vitest の bindings で SEED_CUSTOMER_COUNT を上書きして短時間に抑える

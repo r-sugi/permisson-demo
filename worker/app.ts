@@ -7,6 +7,7 @@ import { jwt } from 'hono/jwt'
 import { logger } from 'hono/logger'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { authContextMiddleware } from './middleware/auth'
+import { basicAuthMiddleware } from './middleware/basic-auth'
 import { diMiddleware } from './middleware/di'
 import { protectedAuthRoutes, publicAuthRoutes } from './routes/auth'
 import { customerRoutes } from './routes/customers'
@@ -20,9 +21,9 @@ export const app = new Hono<HonoEnv>()
     if (isMyAppError(err)) {
       return c.json({ message: err.message }, err.status as ContentfulStatusCode)
     }
-    // Hono のデフォルトエラー
+    // Hono の HTTPException（Basic 認証 401 等は res に WWW-Authenticate を含む）
     if (err instanceof HTTPException) {
-      return c.json({ message: err.message }, err.status as ContentfulStatusCode)
+      return err.getResponse()
     }
     // 予期せぬエラー
     console.error(err)
@@ -59,5 +60,17 @@ export const app = new Hono<HonoEnv>()
   .route('/api/customers', customerRoutes)
   .route('/api/shops', shopListRoutes)
   .route('/api/tenants', tenantShopRoutes)
+
+  // /login のみ Basic 認証（SPA は index を返す）
+  .use('/login', basicAuthMiddleware())
+  .get('/login', async (c) => {
+    const indexRequest = new Request(new URL('/', c.req.url), c.req.raw)
+    try {
+      return await c.env.ASSETS.fetch(indexRequest)
+    } catch {
+      // dev: ASSETS が未構築の場合は Vite へフォールバック
+      return fetch(indexRequest)
+    }
+  })
 
 export type AppType = typeof app

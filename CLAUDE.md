@@ -37,7 +37,7 @@ npm run db:reset:seed   # migrate → reset → seed を一括実行
 
 ### ローカル環境変数
 
-`.dev.vars`（gitignore対象）に `JWT_SECRET` を設定する必要がある。
+`.dev.vars`（`.dev.vars.sample` をコピーして作成、gitignore 対象）に `JWT_SECRET`・`BASIC_AUTH_USERNAME`・`BASIC_AUTH_PASSWORD` を設定する必要がある。
 
 ## Architecture
 

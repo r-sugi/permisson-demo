@@ -15,6 +15,8 @@ export default defineConfig({
           TEST_MIGRATIONS: migrations,
           JWT_SECRET: 'test-secret-do-not-use-in-production',
           SEED_CUSTOMER_COUNT: '10000',
+          BASIC_AUTH_USERNAME: 'user',
+          BASIC_AUTH_PASSWORD: '12345',
         },
       },
     }),

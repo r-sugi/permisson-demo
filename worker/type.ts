@@ -25,6 +25,8 @@ export type Variables = {
 }
 
 export type HonoEnv = {
-  Bindings: Env
+  Bindings: Env & {
+    ASSETS: { fetch: typeof fetch }
+  }
   Variables: Variables
 }
