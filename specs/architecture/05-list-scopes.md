@@ -78,3 +78,24 @@ sequenceDiagram
 
 （詳細は [`worker/repository/customer-scope.ts`](../../worker/repository/customer-scope.ts) を参照）
 
+## 店舗一覧スコープ（ShopAccessRepository）
+
+店舗一覧も顧客スコープと同じ `auth.shopIds` を使います。`UserRelationRepository` による都度解決は廃止されています。
+
+- 実装: [`worker/repository/shop-access.repository.ts`](../../worker/repository/shop-access.repository.ts)
+- 利用: [`worker/usecase/shop.usecase.ts`](../../worker/usecase/shop.usecase.ts) の `listShops`
+
+```
+ShopAccessRepository.listAccessible()
+  → ShopRepository.listActiveByShopIds(auth.shopIds)
+  → SELECT * FROM shops WHERE id IN (auth.shopIds)
+```
+
+| ロール | `auth.shopIds` の中身 | 結果 |
+|--------|----------------------|------|
+| テナント系 | テナント内の全店舗 ID | テナント全店舗 |
+| 店舗系 | 割当店舗 ID のみ | 担当店舗のみ |
+| 割当なし | `[]` | 空配列（0 件） |
+
+`shopIds` は認証時（`AuthContextRepository.tryAuthenticateUser`）に 1 回だけ解決され、リクエスト内で再利用します。
+
