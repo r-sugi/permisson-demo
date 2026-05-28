@@ -1,5 +1,5 @@
 import type { PurchaseHistoryRepository as PurchaseHistoryRepositoryPort } from '@shared/permission/scope/resolver-types'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import { schema } from '../rdb/index'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 

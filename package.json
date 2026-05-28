@@ -3,16 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.12.1",
   "scripts": {
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format .",
     "format:fix": "biome format --write .",
-    "fix": "npm run lint:fix && npm run format:fix",
-    "dev": "npm run cf-typegen && vite",
+    "fix": "pnpm run lint:fix && pnpm run format:fix",
+    "dev": "pnpm run cf-typegen && vite",
     "build": "tsc -b && vite build",
-    "preview": "npm run build && vite preview",
-    "deploy": "npm run build && wrangler deploy",
+    "preview": "pnpm run build && vite preview",
+    "deploy": "pnpm run build && wrangler deploy",
     "test": "run-s test:frontend test:unit test:e2e",
     "test:unit": "vitest run --config vitest.config.unit.ts",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
@@ -23,7 +24,7 @@
     "db:migrate:local": "wrangler d1 migrations apply authz-sandbox --local",
     "db:reset:local": "vite-node -c vite.seed-cli.config.ts worker/cli/run-local-reset.ts",
     "db:seed:local": "vite-node -c vite.seed-cli.config.ts worker/cli/run-local-seed.ts",
-    "db:reset:seed": "npm run db:migrate:local && npm run db:reset:local && npm run db:seed:local",
+    "db:reset:seed": "pnpm run db:migrate:local && pnpm run db:reset:local && pnpm run db:seed:local",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
@@ -62,5 +63,15 @@
     "vitest": "^4.1.2",
     "@vitest/coverage-v8": "^4.1.5",
     "wrangler": "^4.80.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@swc/core",
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
   }
 }

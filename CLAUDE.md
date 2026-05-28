@@ -10,29 +10,29 @@ Cloudflare Workers (Hono) + React (Vite) の一体型権限制御 PoC（[authz-s
 
 ```bash
 # 開発
-npm run dev            # cf-typegen 後に Vite 開発サーバ起動
-npm run cf-typegen     # wrangler types で Env 型を生成
+pnpm run dev            # cf-typegen 後に Vite 開発サーバ起動
+pnpm run cf-typegen     # wrangler types で Env 型を生成
 
 # ビルド・デプロイ
-npm run build
-npm run deploy
+pnpm run build
+pnpm run deploy
 
 # Lint / フォーマット（Biome）
-npm run lint           # チェックのみ
-npm run fix            # lint + format を自動修正
+pnpm run lint           # チェックのみ
+pnpm run fix            # lint + format を自動修正
 
 # テスト（3種類の vitest config が分離）
-npm run test:unit      # worker/**/*.test.ts, shared/**/*.test.ts（node環境）
-npm run test:e2e       # worker/**/*.e2e-spec.ts（Miniflare + D1 マイグレーション適用）
-npm run test:frontend  # src/**/*.{test,spec}.{ts,tsx}（happy-dom）
-npm run test           # 上記3つを順に実行
+pnpm run test:unit      # worker/**/*.test.ts, shared/**/*.test.ts（node環境）
+pnpm run test:e2e       # worker/**/*.e2e-spec.ts（Miniflare + D1 マイグレーション適用）
+pnpm run test:frontend  # src/**/*.{test,spec}.{ts,tsx}（happy-dom）
+pnpm run test           # 上記3つを順に実行
 
 # 単一ファイル指定
-npx vitest run --config vitest.config.unit.ts worker/usecase/shop.usecase.test.ts
+pnpm exec vitest run --config vitest.config.unit.ts worker/usecase/shop.usecase.test.ts
 
 # DB（ローカル D1）
-npm run db:gen          # drizzle-kit generate でマイグレーション生成
-npm run db:reset:seed   # migrate → reset → seed を一括実行
+pnpm run db:gen          # drizzle-kit generate でマイグレーション生成
+pnpm run db:reset:seed   # migrate → reset → seed を一括実行
 ```
 
 ### ローカル環境変数

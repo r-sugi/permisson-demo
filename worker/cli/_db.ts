@@ -12,7 +12,7 @@ export function findSqliteFile(): string {
   )
   if (files.length === 0) {
     throw new Error(
-      `D1 SQLite ファイルが見つかりません: ${D1_STATE_DIR}\n先に npm run db:migrate:local を実行してください`,
+      `D1 SQLite ファイルが見つかりません: ${D1_STATE_DIR}\n先に pnpm run db:migrate:local を実行してください`,
     )
   }
   return join(D1_STATE_DIR, files[0])
