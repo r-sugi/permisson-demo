@@ -8,6 +8,7 @@ function auth(partial: Pick<AuthContext, 'tenantId' | 'role' | 'plan'> & Partial
     tenantId: partial.tenantId,
     role: partial.role,
     plan: partial.plan,
+    shopIds: partial.shopIds ?? [],
   }
 }
 

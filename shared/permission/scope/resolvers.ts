@@ -27,8 +27,8 @@ export const resolveCustomerViaShop =
   async (repo, auth) => {
     const ev = await repo.purchaseHistory.evaluateCustomerShopAccess(
       customerId,
-      auth.userId,
       auth.tenantId,
+      auth.shopIds,
     )
     if (ev === null) return false
     if (isTenantAssignmentRole(auth.role)) {

@@ -33,10 +33,10 @@ flowchart TD
 - `CustomerScope` / `BaseCustomerScope`: [`shared/permission/scope/customer/scope.ts`](../../shared/permission/scope/customer/scope.ts)
 - `ScopeMap`（型）: [`shared/permission/scope/customer/scope-map.ts`](../../shared/permission/scope/customer/scope-map.ts)
 
-実際の SQL 実装は Worker 層にあり、`UserRelationRepository` によって「tenant スコープか shops スコープか」を解決して生成されます。
+実際の SQL 実装は Worker 層にあり、認証ミドルウェア（`AuthContextRepository`）で **`AuthContext.shopIds`（閲覧可能店舗ID一覧）**を解決し、それを使ってスコープを生成します。
 
 - 実装（SQL）: [`worker/repository/customer-scope.ts`](../../worker/repository/customer-scope.ts)
-- 解決（ロール/割当）: [`worker/repository/user-relation.repository.ts`](../../worker/repository/user-relation.repository.ts)
+- 解決（ロール/割当 → shopIds）: [`worker/repository/auth-context.repository.ts`](../../worker/repository/auth-context.repository.ts)
 - 利用（キャッシュして使い回す）: [`worker/repository/customer.repository.ts`](../../worker/repository/customer.repository.ts)
 
 ## スコープの流れ（一覧・単体・ID検証の共通基盤）
@@ -45,24 +45,20 @@ flowchart TD
 sequenceDiagram
   participant UseCase as UseCase/Route
   participant Repo as CustomerRepository
-  participant Rel as UserRelationRepository
+  participant Auth as authContextMiddleware
+  participant AuthRepo as AuthContextRepository
   participant Scope as CustomerScope
   participant DB as DB
 
   UseCase->>Repo: list / count / findById / validateIds
-  Repo->>Rel: resolveForUser(userId)
-  Rel->>DB: select admin_users
-  DB-->>Rel: role, tenantId
-  alt tenant_assignment role
-    Rel-->>Repo: {kind:tenant, tenantId}
-  else shop_assignment role
-    Rel->>DB: select shop_assignments limit 1
-    DB-->>Rel: exists?
-    Rel-->>Repo: {kind:shops, userId}
-  end
-  Repo-->>Repo: createCustomerScope(resolution)
+  Note over Auth,AuthRepo: リクエスト開始時に auth を注入
+  Auth->>AuthRepo: tryAuthenticateUser(sub, tenantId)
+  AuthRepo->>DB: select admin_users + subscriptions
+  AuthRepo->>DB: resolve shopIds（shops or shop_assignments JOIN shops）
+  AuthRepo-->>Auth: plan, role, tenantId, shopIds
+  Repo-->>Repo: createCustomerScope(auth)
   Repo->>Scope: scope.findCustomerRows / countCustomers / isCustomerInScope
-  Scope->>DB: EXISTS + JOIN queries
+  Scope->>DB: purchase_histories WHERE tenant_id AND shop_id IN (shopIds)
   DB-->>Scope: rows
   Scope-->>UseCase: result
 ```
@@ -78,8 +74,7 @@ sequenceDiagram
 
 実装例:
 
-- `TenantCustomerScope`: `purchase_histories ⨝ shops` で `shops.tenantId` を条件にする
-- `ShopsCustomerScope`: `purchase_histories ⨝ shop_assignments` で `userId` を条件にする
+- `UnifiedCustomerScope`: `purchase_histories(tenant_id, shop_id)` を条件にする（`tenant_id = auth.tenantId AND shop_id IN auth.shopIds`）
 
 （詳細は [`worker/repository/customer-scope.ts`](../../worker/repository/customer-scope.ts) を参照）
 

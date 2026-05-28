@@ -24,7 +24,7 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
     purchaseHistory: purchaseHistoryRepo,
   })
 
-  const customerRepo = CustomerRepository.create(auth.userId, db, userRelations)
+  const customerRepo = CustomerRepository.create(auth, db)
   const shopAccessRepo = ShopAccessRepository.create(auth.userId, shopRepo, userRelations)
 
   c.set('useCase', {

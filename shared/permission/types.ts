@@ -24,6 +24,8 @@ export type AuthContext = {
   tenantId: string
   role: Role
   plan: Plan
+  /** 認証時に確定した閲覧可能な店舗ID（リクエスト単位） */
+  shopIds: string[]
 }
 
 export type PolicyContext = {

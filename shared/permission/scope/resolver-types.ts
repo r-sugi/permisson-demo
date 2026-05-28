@@ -17,8 +17,8 @@ export interface PurchaseHistoryRepository {
   /** 顧客に紐づく全 purchase_histories を踏まえ、1クエリで Gate2 判定に必要なフラグを返す。履歴が無ければ null */
   evaluateCustomerShopAccess(
     customerId: string,
-    userId: string,
     authTenantId: string,
+    authShopIds: string[],
   ): Promise<{ allowedByTenant: boolean; allowedByShopAssignment: boolean } | null>
 }
 

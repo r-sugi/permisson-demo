@@ -18,13 +18,14 @@ export async function authContextMiddleware(c: Context<HonoEnv>, next: Next) {
     throw new SubscriptionInactiveError()
   }
 
-  const { adminUserForAuth: u, plan } = response
+  const { adminUserForAuth: u, plan, shopIds } = response
 
   c.set('auth', {
     userId: u.sub,
     tenantId: u.tenantId,
     role: u.role,
     plan,
+    shopIds,
   } satisfies AuthContext)
 
   await next()

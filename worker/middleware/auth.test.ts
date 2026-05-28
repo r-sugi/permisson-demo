@@ -33,6 +33,7 @@ describe('authContextMiddleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
       },
+      shopIds: [],
     })
 
     const c = makeCtx({
@@ -49,6 +50,7 @@ describe('authContextMiddleware', () => {
       tenantId: 't',
       role: 'tenant_owner',
       plan: 'pro',
+      shopIds: [],
     })
   })
 

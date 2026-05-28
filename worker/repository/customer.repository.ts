@@ -4,8 +4,8 @@ import { schema } from '../rdb/index'
 import type { CustomerRow } from '../rdb/models/customers'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
 import { createCustomerScope } from './customer-scope'
-import { UserRelationRepository } from './user-relation.repository'
 import { ResourceNotFoundError } from '@shared/error/my-app-error'
+import type { AuthContext } from '@shared/permission/types'
 
 const EXPORT_PAGE_SIZE = 500
 
@@ -76,23 +76,20 @@ export class CustomerRepository {
   private scopeCache?: CustomerScope
 
   private constructor(
-    private readonly userId: string,
+    private readonly auth: Pick<AuthContext, 'tenantId' | 'shopIds'>,
     private readonly db: DrizzleDb,
-    private readonly userRelations: UserRelationRepository,
   ) {}
 
   static create(
-    userId: string,
+    auth: Pick<AuthContext, 'tenantId' | 'shopIds'>,
     db: DrizzleDb,
-    userRelations = new UserRelationRepository(db),
   ): CustomerRepository {
-    return new CustomerRepository(userId, db, userRelations)
+    return new CustomerRepository(auth, db)
   }
 
   private async resolveScope(): Promise<CustomerScope> {
     if (!this.scopeCache) {
-      const resolution = await this.userRelations.resolveForUser(this.userId)
-      this.scopeCache = createCustomerScope(resolution, this.db)
+      this.scopeCache = createCustomerScope(this.auth, this.db)
     }
     return this.scopeCache
   }

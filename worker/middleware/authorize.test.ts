@@ -51,6 +51,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -75,6 +76,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get('/ok', authorize({ policy: { target: 'customer', action: 'read' } }), (c) =>
@@ -92,6 +94,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'shop_staff',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get('/deny', authorize({ policy: { target: 'customer', action: 'read' } }), (c) =>
@@ -111,6 +114,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -139,6 +143,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -161,6 +166,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -184,6 +190,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -209,6 +216,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -235,6 +243,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -261,6 +270,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'shop_staff',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -286,6 +296,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'shop_staff',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -310,6 +321,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(
@@ -334,6 +346,7 @@ describe('authorize middleware', () => {
         tenantId: 't',
         role: 'tenant_owner',
         plan: 'pro',
+        shopIds: [],
       }
       const app = testApp(auth, (a) =>
         a.get(

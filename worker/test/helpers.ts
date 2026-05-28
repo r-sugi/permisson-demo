@@ -231,12 +231,12 @@ export async function resetDb() {
     .run()
 
   const fixturePh = [
-    { id: 'ph-1', customerId: 'cust-s1-1', shopId: TEST_SHOP_S1_ID },
-    { id: 'ph-2', customerId: 'cust-s1-2', shopId: TEST_SHOP_S1_ID },
-    { id: 'ph-3', customerId: 'cust-s2-1', shopId: 'test-shop-s2' },
-    { id: 'ph-4', customerId: 'cust-f1-1', shopId: TEST_SHOP_F1_ID },
-    { id: 'ph-5', customerId: 'cust-f1-2', shopId: TEST_SHOP_F1_ID },
-    { id: 'ph-6', customerId: 'cust-g1-1', shopId: TEST_SHOP_G1_ID },
+    { id: 'ph-1', customerId: 'cust-s1-1', shopId: TEST_SHOP_S1_ID, tenantId: TEST_TENANT_S_ID },
+    { id: 'ph-2', customerId: 'cust-s1-2', shopId: TEST_SHOP_S1_ID, tenantId: TEST_TENANT_S_ID },
+    { id: 'ph-3', customerId: 'cust-s2-1', shopId: 'test-shop-s2', tenantId: TEST_TENANT_S_ID },
+    { id: 'ph-4', customerId: 'cust-f1-1', shopId: TEST_SHOP_F1_ID, tenantId: TEST_TENANT_F_ID },
+    { id: 'ph-5', customerId: 'cust-f1-2', shopId: TEST_SHOP_F1_ID, tenantId: TEST_TENANT_F_ID },
+    { id: 'ph-6', customerId: 'cust-g1-1', shopId: TEST_SHOP_G1_ID, tenantId: TEST_TENANT_G_ID },
   ]
   const bulkPh = bulkCustomers.map((c, i) => {
     const shopId = sShops[i % sShops.length]
@@ -245,9 +245,10 @@ export async function resetDb() {
       id: ulid(),
       customerId: c.id,
       shopId,
+      tenantId: TEST_TENANT_S_ID,
     }
   })
-  const PH_INSERT_CHUNK = 30
+  const PH_INSERT_CHUNK = 20
   for (let i = 0; i < bulkPh.length; i += PH_INSERT_CHUNK) {
     await db
       .insert(schema.purchaseHistories)

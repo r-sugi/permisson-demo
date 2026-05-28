@@ -5,12 +5,8 @@ function makeDbReturningAll(rows: unknown[]) {
   return {
     select: () => ({
       from: () => ({
-        innerJoin: () => ({
-          leftJoin: () => ({
-            where: () => ({
-              all: async () => rows,
-            }),
-          }),
+        where: () => ({
+          all: async () => rows,
         }),
       }),
     }),
@@ -22,14 +18,14 @@ describe('PurchaseHistoryRepository.evaluateCustomerShopAccess', () => {
     const db = makeDbReturningAll([])
     const repo = new PurchaseHistoryRepository(db as never)
 
-    await expect(repo.evaluateCustomerShopAccess('cust', 'user', 'tenant')).resolves.toBeNull()
+    await expect(repo.evaluateCustomerShopAccess('cust', 'tenant', ['shop'])).resolves.toBeNull()
   })
 
   it('tenantMatch=1, shopMatch=0 なら allowedByTenant のみ true', async () => {
     const db = makeDbReturningAll([{ tenantMatch: 1, shopMatch: 0 }])
     const repo = new PurchaseHistoryRepository(db as never)
 
-    await expect(repo.evaluateCustomerShopAccess('cust', 'user', 'tenant')).resolves.toEqual({
+    await expect(repo.evaluateCustomerShopAccess('cust', 'tenant', ['shop'])).resolves.toEqual({
       allowedByTenant: true,
       allowedByShopAssignment: false,
     })
@@ -39,7 +35,7 @@ describe('PurchaseHistoryRepository.evaluateCustomerShopAccess', () => {
     const db = makeDbReturningAll([{ tenantMatch: 0, shopMatch: 1 }])
     const repo = new PurchaseHistoryRepository(db as never)
 
-    await expect(repo.evaluateCustomerShopAccess('cust', 'user', 'tenant')).resolves.toEqual({
+    await expect(repo.evaluateCustomerShopAccess('cust', 'tenant', ['shop'])).resolves.toEqual({
       allowedByTenant: false,
       allowedByShopAssignment: true,
     })
@@ -49,7 +45,7 @@ describe('PurchaseHistoryRepository.evaluateCustomerShopAccess', () => {
     const db = makeDbReturningAll([{ tenantMatch: null, shopMatch: undefined }])
     const repo = new PurchaseHistoryRepository(db as never)
 
-    await expect(repo.evaluateCustomerShopAccess('cust', 'user', 'tenant')).resolves.toEqual({
+    await expect(repo.evaluateCustomerShopAccess('cust', 'tenant', ['shop'])).resolves.toEqual({
       allowedByTenant: false,
       allowedByShopAssignment: false,
     })

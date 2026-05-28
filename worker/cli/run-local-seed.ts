@@ -313,7 +313,14 @@ async function seed() {
     .values(namedRows.map(({ shopId: _s, ...c }) => c))
     .run()
   db.insert(schema.purchaseHistories)
-    .values(namedRows.map((r) => ({ id: ulid(), customerId: r.id, shopId: r.shopId })))
+    .values(
+      namedRows.map((r) => ({
+        id: ulid(),
+        customerId: r.id,
+        shopId: r.shopId,
+        tenantId: r.shopId === shopA1 || r.shopId === shopA2 ? tenantA : tenantB,
+      })),
+    )
     .run()
 
   const CHUNK = 500
@@ -330,7 +337,15 @@ async function seed() {
     db.insert(schema.customers).values(customers).run()
     db.insert(schema.purchaseHistories)
       .values(
-        customers.map((c, k) => ({ id: ulid(), customerId: c.id, shopId: shopIdForIndex(i + k) })),
+        customers.map((c, k) => {
+          const shopId = shopIdForIndex(i + k)
+          return {
+            id: ulid(),
+            customerId: c.id,
+            shopId,
+            tenantId: shopId === shopA1 || shopId === shopA2 ? tenantA : tenantB,
+          }
+        }),
       )
       .run()
     if ((i + CHUNK) % 100_000 === 0 || end === TOTAL_CUSTOMERS) {

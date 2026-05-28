@@ -16,6 +16,7 @@ export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort 
         id: values.id,
         customerId: values.customerId,
         shopId: values.shopId,
+        tenantId: values.tenantId,
       })
       .run()
   }
@@ -55,25 +56,30 @@ export class PurchaseHistoryRepository implements PurchaseHistoryRepositoryPort 
 
   async evaluateCustomerShopAccess(
     customerId: string,
-    userId: string,
     authTenantId: string,
+    authShopIds: string[],
   ): Promise<{ allowedByTenant: boolean; allowedByShopAssignment: boolean } | null> {
-    const rows = await this.db
-      .select({
-        tenantMatch: sql<number>`max(case when ${schema.shops.tenantId} = ${authTenantId} then 1 else 0 end)`,
-        shopMatch: sql<number>`max(case when ${schema.shopAssignments.userId} is not null then 1 else 0 end)`,
-      })
-      .from(schema.purchaseHistories)
-      .innerJoin(schema.shops, eq(schema.shops.id, schema.purchaseHistories.shopId))
-      .leftJoin(
-        schema.shopAssignments,
-        and(
-          eq(schema.shopAssignments.shopId, schema.purchaseHistories.shopId),
-          eq(schema.shopAssignments.userId, userId),
-        ),
-      )
-      .where(eq(schema.purchaseHistories.customerId, customerId))
-      .all()
+    const rows =
+      authShopIds.length === 0
+        ? await this.db
+            .select({
+              tenantMatch:
+                sql<number>`max(case when ${schema.purchaseHistories.tenantId} = ${authTenantId} then 1 else 0 end)`,
+              shopMatch: sql<number>`0`,
+            })
+            .from(schema.purchaseHistories)
+            .where(eq(schema.purchaseHistories.customerId, customerId))
+            .all()
+        : await this.db
+            .select({
+              tenantMatch:
+                sql<number>`max(case when ${schema.purchaseHistories.tenantId} = ${authTenantId} then 1 else 0 end)`,
+              shopMatch:
+                sql<number>`max(case when ${inArray(schema.purchaseHistories.shopId, authShopIds)} then 1 else 0 end)`,
+            })
+            .from(schema.purchaseHistories)
+            .where(eq(schema.purchaseHistories.customerId, customerId))
+            .all()
 
     if (rows.length === 0) return null
     const row = rows[0]

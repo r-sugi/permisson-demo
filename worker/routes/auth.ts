@@ -464,6 +464,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           id: ulid(),
           customerId: row.id,
           shopId: shopIdForCustomerIndex(index),
+          tenantId: index < halfPoint ? tenantA : tenantB,
         })),
       )
       .run()
@@ -481,7 +482,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
         tag: string | null
         memo: string | null
       }[] = []
-      const phChunk: { id: string; customerId: string; shopId: string }[] = []
+      const phChunk: { id: string; customerId: string; shopId: string; tenantId: string }[] = []
       for (let i = start; i < end; i++) {
         const id = ulid()
         customerChunk.push({
@@ -495,6 +496,7 @@ export const publicAuthRoutes = new Hono<HonoEnv>()
           id: ulid(),
           customerId: id,
           shopId: shopIdForCustomerIndex(i),
+          tenantId: i < halfPoint ? tenantA : tenantB,
         })
       }
       await db.insert(schema.customers).values(customerChunk).run()

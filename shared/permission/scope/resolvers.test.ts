@@ -16,6 +16,7 @@ const auth = (overrides: Partial<AuthContext> = {}): AuthContext => ({
   tenantId: 'tenant-a',
   role: 'shop_owner',
   plan: 'pro',
+  shopIds: [],
   ...overrides,
 })
 

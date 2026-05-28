@@ -8,6 +8,7 @@ export const purchaseHistories = sqliteTable('purchase_histories', {
   shopId: text('shop_id')
     .notNull()
     .references(() => shops.id, { onDelete: 'cascade' }),
+  tenantId: text('tenant_id').notNull(),
   purchasedAt: text('purchased_at').notNull().default(sql`(datetime('now'))`),
 })
 
