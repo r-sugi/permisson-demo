@@ -8,7 +8,9 @@ import { type CustomerRowWithDisplay, fetchCustomersWithDisplayForIds } from './
 
 const SQLITE_PARAM_LIMIT = 900
 
-function purchaseHistoryScopeWhere(auth: Pick<AuthContext, 'tenantId' | 'shopIds'>) {
+export type CustomerScopeAuth = Pick<AuthContext, 'tenantId' | 'shopIds'>
+
+function purchaseHistoryScopeWhere(auth: CustomerScopeAuth) {
   if (auth.shopIds.length === 0) {
     return sql`1 = 0`
   }
@@ -18,7 +20,7 @@ function purchaseHistoryScopeWhere(auth: Pick<AuthContext, 'tenantId' | 'shopIds
   )
 }
 
-function purchaseHistoryScopeExists(db: DrizzleDb, auth: Pick<AuthContext, 'tenantId' | 'shopIds'>) {
+function purchaseHistoryScopeExists(db: DrizzleDb, auth: CustomerScopeAuth) {
   return exists(
     db
       .select({ x: schema.purchaseHistories.customerId })
@@ -34,7 +36,7 @@ function purchaseHistoryScopeExists(db: DrizzleDb, auth: Pick<AuthContext, 'tena
 
 class UnifiedCustomerScope extends BaseCustomerScope {
   constructor(
-    private readonly auth: Pick<AuthContext, 'tenantId' | 'shopIds'>,
+    private readonly auth: CustomerScopeAuth,
     private readonly db: DrizzleDb,
   ) {
     super()
@@ -103,6 +105,6 @@ class UnifiedCustomerScope extends BaseCustomerScope {
   }
 }
 
-export function createCustomerScope(auth: Pick<AuthContext, 'tenantId' | 'shopIds'>, db: DrizzleDb): CustomerScope {
+export function createCustomerScope(auth: CustomerScopeAuth, db: DrizzleDb): CustomerScope {
   return new UnifiedCustomerScope(auth, db)
 }

@@ -3,9 +3,8 @@ import { eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { schema } from '../rdb/index'
 import type { CustomerRow } from '../rdb/models/customers'
 import type { DrizzleDb, DrizzleExecutor } from '../services/database.service'
-import { createCustomerScope } from './customer-scope'
+import { createCustomerScope, type CustomerScopeAuth } from './customer-scope'
 import { ResourceNotFoundError } from '@shared/error/my-app-error'
-import type { AuthContext } from '@shared/permission/types'
 
 const EXPORT_PAGE_SIZE = 500
 
@@ -76,12 +75,12 @@ export class CustomerRepository {
   private scopeCache?: CustomerScope
 
   private constructor(
-    private readonly auth: Pick<AuthContext, 'tenantId' | 'shopIds'>,
+    private readonly auth: CustomerScopeAuth,
     private readonly db: DrizzleDb,
   ) {}
 
   static create(
-    auth: Pick<AuthContext, 'tenantId' | 'shopIds'>,
+    auth: CustomerScopeAuth,
     db: DrizzleDb,
   ): CustomerRepository {
     return new CustomerRepository(auth, db)

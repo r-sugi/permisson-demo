@@ -17,27 +17,7 @@ export class ShopRepository implements ShopRepositoryPort {
     return this.db.select().from(schema.shops).where(eq(schema.shops.tenantId, tenantId)).all()
   }
 
-  /** shop_assignments と JOIN し、ユーザーに割り当てられた店舗のみ（一覧スコープ用） */
-  listAssignedShopsForUser(userId: string): Promise<ShopRow[]> {
-    return this.db
-      .select({
-        id: schema.shops.id,
-        tenantId: schema.shops.tenantId,
-        name: schema.shops.name,
-        createdAt: schema.shops.createdAt,
-      })
-      .from(schema.shops)
-      .innerJoin(schema.shopAssignments, eq(schema.shopAssignments.shopId, schema.shops.id))
-      .where(eq(schema.shopAssignments.userId, userId))
-      .all()
-  }
-
-  async listActiveByShopId(shopId: string): Promise<ShopRow[]> {
-    const row = await this.db.select().from(schema.shops).where(eq(schema.shops.id, shopId)).get()
-    return row ? [row] : []
-  }
-
-  /** 複数店舗 ID（shop_assignments のユニオン）。SQLite の変数上限を避け inArray を分割 */
+  /** 複数店舗 ID。SQLite の変数上限を避け inArray を分割 */
   async listActiveByShopIds(shopIds: string[]): Promise<ShopRow[]> {
     if (shopIds.length === 0) return []
     const limit = 900

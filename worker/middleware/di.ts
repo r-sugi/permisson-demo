@@ -4,7 +4,6 @@ import { PurchaseHistoryRepository } from '../repository/purchase-history.reposi
 import { ShopRepository } from '../repository/shop.repository'
 import { ShopAccessRepository } from '../repository/shop-access.repository'
 import { ShopAssignmentRepository } from '../repository/shop-assignment.repository'
-import { UserRelationRepository } from '../repository/user-relation.repository'
 import type { HonoEnv } from '../type'
 import { CustomerUseCase } from '../usecase/customer.usecase'
 import { ShopUseCase } from '../usecase/shop.usecase'
@@ -14,8 +13,6 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
   const db = c.get('db')
 
   const shopRepo = new ShopRepository(db)
-  const userRelations = new UserRelationRepository(db)
-
   const purchaseHistoryRepo = new PurchaseHistoryRepository(db)
 
   c.set('repo', {
@@ -25,7 +22,7 @@ export async function diMiddleware(c: Context<HonoEnv>, next: Next) {
   })
 
   const customerRepo = CustomerRepository.create(auth, db)
-  const shopAccessRepo = ShopAccessRepository.create(auth.userId, shopRepo, userRelations)
+  const shopAccessRepo = ShopAccessRepository.create(auth, shopRepo)
 
   c.set('useCase', {
     customer: new CustomerUseCase(customerRepo, purchaseHistoryRepo, db, shopRepo, auth),

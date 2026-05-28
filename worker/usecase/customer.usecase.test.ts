@@ -2,7 +2,9 @@ import type { AuthContext } from '@shared/permission/types'
 import { describe, expect, it, vi } from 'vitest'
 import { CustomerUseCase } from './customer.usecase'
 
-function auth(partial: Pick<AuthContext, 'tenantId' | 'role' | 'plan'> & Partial<AuthContext>): AuthContext {
+type AuthInput = Pick<AuthContext, 'tenantId' | 'role' | 'plan'> & Partial<AuthContext>
+
+function auth(partial: AuthInput): AuthContext {
   return {
     userId: partial.userId ?? 'u',
     tenantId: partial.tenantId,
